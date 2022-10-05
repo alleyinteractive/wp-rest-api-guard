@@ -17,11 +17,11 @@
         }
     ],
     "require": {
-        "php": "^7.4|^8.0",
-        "alleyinteractive/composer-wordpress-autoloader": "^1.0"
+        "php": "^7.4|^8.0"
     },
     "require-dev": {
         "alleyinteractive/alley-coding-standards": "^0.3",
+        "alleyinteractive/composer-wordpress-autoloader": "^1.0",
         "mantle-framework/testkit": "^0.6",
         "nunomaduro/collision": "^5.0"
     },
@@ -35,9 +35,6 @@
     },
     "extra": {
         "wordpress-autoloader": {
-            "autoload": {
-                "Alley\\WP\\REST_API_Guard\\": "src"
-            },
             "autoload-dev": {
                 "Alley\\WP\\REST_API_Guard\\Tests\\": "tests"
             }
