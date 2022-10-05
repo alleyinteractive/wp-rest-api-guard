@@ -42,6 +42,20 @@ This can be prevented in the plugin's settings or via code:
 add_filter( 'rest_api_guard_allow_user_access', fn () => true );
 ```
 
+### Preventing Access to Index (`/`) or Namespace Endpoints (`wp/v2`)
+
+To prevent anonymous users from browing your site and discovering what plugins/post types are setup, the plugin restricts access to the index (`/`) and namespace (`wp/v2`) endpoints. This can be prevented in the plugin's settings or via code:
+
+```php
+// Allow index access.
+add_filter( 'rest_api_guard_allow_index_access', fn () => true );
+
+// Allow namespace access.
+add_filter( 'rest_api_guard_allow_namespace_access', fn ( string $namespace ) => true );
+```
+
+```
+
 ### Restrict Anonymous Access to the REST API
 
 The plugin can restrict anonymous access for any request to the REST API:

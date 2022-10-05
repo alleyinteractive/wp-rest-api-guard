@@ -19,6 +19,7 @@ namespace Alley\WP\REST_API_Guard;
 
 use WP_Error;
 use WP_REST_Request;
+use WP_REST_Server;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -35,10 +36,11 @@ main();
 /**
  * Check if anonymous access should be prevented for the current request.
  *
+ * @param WP_REST_Server  $server  Server instance.
  * @param WP_REST_Request $request The request object.
  * @return bool
  */
-function should_prevent_anonymous_access( WP_REST_Request $request ): bool {
+function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Request $request ): bool {
 	/**
 	 * Check if anonymous access is prevent by default.
 	 *
@@ -50,6 +52,28 @@ function should_prevent_anonymous_access( WP_REST_Request $request ): bool {
 	}
 
 	$endpoint = $request->get_route();
+
+	/**
+	 * Prevent access to the root of the REST API.
+	 *
+	 * @param bool $prevent Whether to prevent anonymous access, default false.
+	 */
+	if ( '/' === $endpoint && false === apply_filters( 'rest_api_guard_allow_index_access', false ) ) {
+		return true;
+	}
+
+	/**
+	 * Prevent access to the namespace index of the REST API.
+	 *
+	 * @param bool  $prevent    Whether to prevent anonymous access, default false.
+	 * @param string $namespace The namespace of the request.
+	 */
+	if (
+		in_array( substr( $endpoint, 1 ), $server->get_namespaces(), true )
+		&& false === apply_filters( 'rest_api_guard_allow_namespace_access', false, substr( $endpoint, 1 ) )
+	) {
+		return true;
+	}
 
 	/**
 	 * Prevent access to the /wp/v2/users endpoints by default.
@@ -104,9 +128,9 @@ function should_prevent_anonymous_access( WP_REST_Request $request ): bool {
 /**
  * Short-circuit the REST API request if the user is not allowed to access it.
  *
- * @param  mixed            $pre     Dispatched value. Will be used if not empty.
- * @param \WP_REST_Server  $server  Server instance.
- * @param \WP_REST_Request $request REST API Request.
+ * @param mixed           $pre     Dispatched value. Will be used if not empty.
+ * @param WP_REST_Server  $server  Server instance.
+ * @param WP_REST_Request $request REST API Request.
  * @return mixed
  */
 function on_rest_pre_dispatch( $pre, $server, $request ) {
@@ -114,8 +138,7 @@ function on_rest_pre_dispatch( $pre, $server, $request ) {
 		return $pre;
 	}
 
-	// Check if anonymous access is prevent by default.
-	if ( should_prevent_anonymous_access( $request ) ) {
+	if ( should_prevent_anonymous_access( $server, $request ) ) {
 		return new WP_Error(
 			'rest_api_guard_unauthorized',
 			/**
