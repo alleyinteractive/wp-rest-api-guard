@@ -2,10 +2,10 @@
 /**
  * Contains functions for working with meta.
  *
- * @package package_name
+ * @package rest-api-guard
  */
 
-namespace Create_WordPress_Plugin;
+namespace Alley\WP\REST_API_Guard;
 
 // Register custom meta fields.
 register_post_meta_from_defs();
@@ -36,7 +36,7 @@ function register_meta_helper(
 		throw new \InvalidArgumentException(
 			__(
 				'Object type must be one of "post", "term".',
-				'create-wordpress-plugin'
+				'rest-api-guard'
 			)
 		);
 	}

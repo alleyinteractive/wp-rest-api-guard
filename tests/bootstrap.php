@@ -1,6 +1,6 @@
 <?php
 /**
- * create-wordpress-plugin Test Bootstrap
+ * rest-api-guard Test Bootstrap
  */
 
 /**

@@ -1,10 +1,10 @@
 <?php
-namespace Create_WordPress_Plugin\Tests;
+namespace Alley\WP\REST_API_Guard\Tests;
 
 use Mantle\Testkit\Test_Case as TestkitTest_Case;
 
 /**
- * plugin-name Base Test Case
+ * rest-api-guard Base Test Case
  */
 abstract class Test_Case extends TestkitTest_Case {
 

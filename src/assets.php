@@ -2,13 +2,13 @@
 /**
  * Contains functions for working with assets (primarily JavaScript).
  *
- * @package package_name
+ * @package rest-api-guard
  */
 
-namespace Create_WordPress_Plugin;
+namespace Alley\WP\REST_API_Guard;
 
-define( 'CREATE_WORDPRESS_PLUGIN_ASSET_MAP', read_asset_map( dirname( __DIR__ ) . '/build/assetMap.json' ) );
-define( 'CREATE_WORDPRESS_PLUGIN_ASSET_MODE', CREATE_WORDPRESS_PLUGIN_ASSET_MAP['mode'] ?? 'production' );
+define( 'REST_API_GUARD_ASSET_MAP', read_asset_map( dirname( __DIR__ ) . '/build/assetMap.json' ) );
+define( 'REST_API_GUARD_ASSET_MODE', REST_API_GUARD_ASSET_MAP['mode'] ?? 'production' );
 
 // Register and enqueue assets.
 add_action( 'wp_enqueue_scripts', __NAMESPACE__ . '\action_wp_enqueue_scripts' );
@@ -34,13 +34,13 @@ function action_wp_enqueue_scripts() {
 	*/
 
 	// wp_enqueue_script(
-	// 	'create-wordpress-plugin-example-entry',
+	// 	'rest-api-guard-example-entry',
 	// 	get_asset_path( 'example-entry.js' ),
 	// 	get_asset_dependencies( 'example-entry.php' ),
 	// 	get_asset_hash( 'example-entry.js' ),
 	// 	true
 	// );
-	// inline_locale_data( 'create-wordpress-plugin-example-entry' );
+	// inline_locale_data( 'rest-api-guard-example-entry' );
 }
 
 /**
@@ -58,13 +58,13 @@ function action_admin_enqueue_scripts() {
 	*/
 
 	// wp_enqueue_script(
-	// 	'create-wordpress-plugin-admin-handle',
+	// 	'rest-api-guard-admin-handle',
 	// 	get_asset_path( 'admin-handle.js' ),
 	// 	get_asset_dependencies( 'admin-handle.php' ),
 	// 	get_asset_hash( 'admin-handle.js' ),
 	// 	true
 	// );
-	// inline_locale_data( 'create-wordpress-plugin-admin-handle' );
+	// inline_locale_data( 'rest-api-guard-admin-handle' );
 }
 
 /**
@@ -82,13 +82,13 @@ function action_enqueue_block_editor_assets() {
 	*/
 
 	// wp_enqueue_script(
-	// 	'create-wordpress-plugin-slotfills',
+	// 	'rest-api-guard-slotfills',
 	// 	get_asset_path( 'slotfills.js' ),
 	// 	get_asset_dependencies( 'slotfills.php' ),
 	// 	get_asset_hash( 'slotfills.js' ),
 	// 	true
 	// );
-	// inline_locale_data( 'create-wordpress-plugin-slotfills' );
+	// inline_locale_data( 'rest-api-guard-slotfills' );
 }
 
 /**
@@ -129,7 +129,7 @@ function get_asset_dependencies( string $asset ) : array {
  */
 function get_asset_hash( string $asset ) : string {
 	return get_asset_property( $asset, 'hash' )
-		?? CREATE_WORDPRESS_PLUGIN_ASSET_MAP['hash']
+		?? REST_API_GUARD_ASSET_MAP['hash']
 		?? '1.0.0';
 }
 
@@ -171,7 +171,7 @@ function get_asset_property( string $asset, string $prop ) : ?string {
 	 */
 	list( $entrypoint, $type ) = explode( '.', "$asset." );
 
-	$asset_property = CREATE_WORDPRESS_PLUGIN_ASSET_MAP[ $entrypoint ][ $type ][ $prop ] ?? null;
+	$asset_property = REST_API_GUARD_ASSET_MAP[ $entrypoint ][ $type ][ $prop ] ?? null;
 
 	return $asset_property ? $asset_property : null;
 }
@@ -185,7 +185,7 @@ function inline_locale_data( string $to_handle ) {
 	// Define locale data for Jed.
 	$locale_data = [
 		'' => [
-			'domain' => 'create-wordpress-plugin',
+			'domain' => 'rest-api-guard',
 			'lang'   => is_admin() ? get_user_locale() : get_locale(),
 		],
 	];
@@ -193,7 +193,7 @@ function inline_locale_data( string $to_handle ) {
 	// Pass the Jed configuration to the admin to properly register i18n.
 	wp_add_inline_script(
 		$to_handle,
-		'wp.i18n.setLocaleData( ' . wp_json_encode( $locale_data ) . ", 'create-wordpress-plugin' );"
+		'wp.i18n.setLocaleData( ' . wp_json_encode( $locale_data ) . ", 'rest-api-guard' );"
 	);
 }
 
