@@ -148,7 +148,7 @@ function on_rest_pre_dispatch( $pre, $server, $request ) {
 			 */
 			apply_filters(
 				'rest_api_guard_unauthorized_message',
-				__( 'Sorry, you are not allowed to access this request.', 'rest-api-guard' ),
+				__( 'Sorry, you are not allowed to access this page.', 'rest-api-guard' ),
 			),
 			[
 				'status' => rest_authorization_required_code(),
