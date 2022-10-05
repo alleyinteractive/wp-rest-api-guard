@@ -29,11 +29,79 @@ composer require alleyinteractive/wp-rest-api-guard
 
 ## Usage
 
-Activate the plugin in WordPress and use it like so:
+The WordPress REST API is generally very public and can share a good deal of
+information with the internet anonymously. This plugin aims to make it easier to
+restrict access to the REST API for your WordPress site.
+
+### Preventing Access to User Information (`wp/v2/users`)
+
+By default, the plugin will restrict anonymous access to the users endpoint.
+This can be prevented in the plugin's settings or via code:
 
 ```php
-$plugin = Alley\WP\REST_API_Guard\Rest_Api_Guard\Rest_Api_Guard();
-$plugin->perform_magic();
+add_filter( 'rest_api_guard_allow_user_access', fn () => true );
+```
+
+### Restrict Anonymous Access to the REST API
+
+The plugin can restrict anonymous access for any request to the REST API:
+
+[screenshot from settings]
+
+Or via code:
+
+```php
+add_filter( 'rest_api_guard_prevent_anonymous_access', fn () => true );
+```
+
+### Limit Anonymous Access to Specific Namespaces/Routes (Allowlist)
+
+Anonymous users can be granted access only to specific namespaces/routes.
+Requests outside of these paths will be denied.
+
+[screenshot from settings]
+
+Or via code:
+
+```php
+add_filter(
+	'rest_api_guard_anonymous_requests_allowlist',
+	function ( array $paths, WP_REST_Request $request ) {
+		// Allow other paths not included here will be denied.
+		$paths[] = 'wp/v2/post';
+		$paths[] = 'custom-namespace/v1/public/*';
+
+		return $paths;
+	},
+	10,
+	2
+);
+```
+
+### Restrict Anonymous Access to Specific Namespaces/Routes (Denylist)
+
+Anonymous users can be restricted from specific namespaces/routes. This acts as
+a denylist for specific paths that an anonymous user cannot access. The paths
+support regular expressions for matching. The use of the
+[Allowlist](#limit-anonymous-access-to-specific-namespacesroutes-allowlist)
+takes priority over this denylist.
+
+[screenshot from settings]
+
+Or via code:
+
+```php
+add_filter(
+	'rest_api_guard_anonymous_requests_denylist',
+	function ( array $paths, WP_REST_Request $request ) {
+		$paths[] = 'wp/v2/user';
+		$paths[] = 'custom-namespace/v1/private/*';
+
+		return $paths;
+	},
+	10,
+	2
+);
 ```
 
 ## Testing
