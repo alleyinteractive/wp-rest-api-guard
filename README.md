@@ -38,12 +38,6 @@ $plugin->perform_magic();
 
 ## Testing
 
-Run `npm run test` to run Jest tests against JavaScript files. Run
-`npm run test:watch` to keep the test runner open and watching for changes.
-
-Run `npm run lint` to run ESLint against all JavaScript files. Linting will also
-happen when running development or production builds.
-
 Run `composer test` to run tests against PHPUnit and the PHP code in the plugin.
 
 ## Changelog
@@ -56,7 +50,9 @@ This project is actively maintained by [Alley
 Interactive](https://github.com/alleyinteractive). Like what you see? [Come work
 with us](https://alley.co/careers/).
 
-- [Sean Fisher](https://github.com/Sean Fisher)
+![Alley logo](https://avatars.githubusercontent.com/u/1733454?s=200&v=4)
+
+- [Sean Fisher](https://github.com/srtfisher)
 - [All Contributors](../../contributors)
 
 ## License
