@@ -90,5 +90,25 @@ class Test_REST_API_Guard extends Test_Case {
 		$this->get( rest_url( '/wp/v2/types' ) )->assertUnauthorized();
 	}
 
-	// public function test_prevent_access_denylist_priority() {}
+	public function test_prevent_access_denylist_priority() {
+		add_filter(
+			'rest_api_guard_anonymous_requests_allowlist',
+			fn () => [
+				'/wp/v2/posts/*',
+				'/wp/v2/tags',
+			]
+		);
+
+		add_filter(
+			'rest_api_guard_anonymous_requests_denylist',
+			fn () => [
+				'/wp/v2/posts/*',
+				'/wp/v2/tags',
+			]
+		);
+
+		$this->get( rest_url( '/wp/v2/posts/' . static::factory()->post->create() ) )->assertOk();
+		$this->get( rest_url( '/wp/v2/tags' ) )->assertOk();
+		$this->get( rest_url( '/wp/v2/categories' ) )->assertUnauthorized();
+	}
 }
