@@ -25,11 +25,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-
-add_filter( 'rest_api_guard_prevent_anonymous_access', fn () => true );
-add_filter( 'rest_api_guard_allow_index_access', fn () => false );
-add_filter( 'rest_api_guard_anonymous_requests_denylist', fn () => "This example\nanother example" );
-
 /**
  * Instantiate the plugin.
  */
@@ -48,13 +43,19 @@ main();
  * @return bool
  */
 function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Request $request ): bool {
+	$settings = (array) get_option( SETTINGS_KEY );
+
+	if ( ! is_array( $settings ) ) {
+		$settings = [];
+	}
+
 	/**
 	 * Check if anonymous access is prevent by default.
 	 *
 	 * @param bool             $prevent Whether to prevent anonymous access, default false.
 	 * @param \WP_REST_Request $request REST API Request.
 	 */
-	if ( true === apply_filters( 'rest_api_guard_prevent_anonymous_access', false, $request ) ) {
+	if ( true === apply_filters( 'rest_api_guard_prevent_anonymous_access', $settings['prevent_anonymous_access'] ?? false, $request ) ) {
 		return true;
 	}
 
@@ -65,7 +66,7 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 	 *
 	 * @param bool $prevent Whether to prevent anonymous access, default false.
 	 */
-	if ( '/' === $endpoint && false === apply_filters( 'rest_api_guard_allow_index_access', false ) ) {
+	if ( '/' === $endpoint && false === apply_filters( 'rest_api_guard_allow_index_access', $settings['allow_index_access'] ?? false ) ) {
 		return true;
 	}
 
@@ -77,7 +78,7 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 	 */
 	if (
 		in_array( substr( $endpoint, 1 ), $server->get_namespaces(), true )
-		&& false === apply_filters( 'rest_api_guard_allow_namespace_access', false, substr( $endpoint, 1 ) )
+		&& false === apply_filters( 'rest_api_guard_allow_namespace_access', $settings['allow_namespace_access'] ?? false, substr( $endpoint, 1 ) )
 	) {
 		return true;
 	}
@@ -87,7 +88,7 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 	 *
 	 * @param bool $pre Whether to prevent access to the /wp/v2/users endpoints.
 	 */
-	if ( preg_match( '#^/wp/v\d+/users($|/)#', $endpoint ) && false === apply_filters( 'rest_api_guard_allow_user_access', false ) ) {
+	if ( preg_match( '#^/wp/v\d+/users($|/)#', $endpoint ) && false === apply_filters( 'rest_api_guard_allow_user_access', $settings['allow_user_access'] ?? false ) ) {
 		return true;
 	}
 
@@ -99,9 +100,12 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 	 * @param string[]         $allowlist Allowlist of requests.
 	 * @param \WP_REST_Request $request   REST API Request.
 	 */
-	$allowlist = apply_filters( 'rest_api_guard_anonymous_requests_allowlist', [] );
+	$allowlist = apply_filters( 'rest_api_guard_anonymous_requests_allowlist', $settings['anonymous_requests_allowlist'] ?? [] );
 
-	if ( is_array( $allowlist ) && ! empty( $allowlist ) ) {
+	if ( ! empty( $allowlist ) ) {
+		if ( ! is_array( $allowlist ) ) {
+			$allowlist = explode( "\n", $allowlist );
+		}
 
 		foreach ( $allowlist as $allowlist_endpoint ) {
 			if ( preg_match( '/' . str_replace( '\*', '.*', preg_quote( $allowlist_endpoint, '/' ) ) . '/', $endpoint ) ) {
@@ -119,9 +123,13 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 	 * @param string[]         $denylist Denylist of requests.
 	 * @param \WP_REST_Request $request  REST API Request.
 	 */
-	$denylist = apply_filters( 'rest_api_guard_anonymous_requests_denylist', [] );
+	$denylist = apply_filters( 'rest_api_guard_anonymous_requests_denylist', $settings['anonymous_requests_denylist'] ?? [] );
 
-	if ( is_array( $denylist ) && ! empty( $denylist ) ) {
+	if ( ! empty( $denylist ) ) {
+		if ( ! is_array( $denylist ) ) {
+			$denylist = explode( "\n", $denylist );
+		}
+
 		foreach ( $denylist as $denylist_endpoint ) {
 			if ( preg_match( '/' . str_replace( '\*', '.*', preg_quote( $denylist_endpoint, '/' ) ) . '/', $endpoint ) ) {
 				return true;
