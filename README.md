@@ -33,6 +33,13 @@ The WordPress REST API is generally very public and can share a good deal of
 information with the internet anonymously. This plugin aims to make it easier to
 restrict access to the REST API for your WordPress site.
 
+### Settings Page
+
+The plugin can be configured via the Settings page (`Settings -> REST API
+Guard`) or via the relevant filter:
+
+<img width="1276" alt="Screen Shot 2022-10-06 at 4 24 01 PM" src="https://user-images.githubusercontent.com/346399/194411352-aa05e939-3fd1-4e37-a3d5-276c1c5c288f.png">
+
 ### Preventing Access to User Information (`wp/v2/users`)
 
 By default, the plugin will restrict anonymous access to the users endpoint.
@@ -58,11 +65,7 @@ add_filter( 'rest_api_guard_allow_namespace_access', fn ( string $namespace ) =>
 
 ### Restrict Anonymous Access to the REST API
 
-The plugin can restrict anonymous access for any request to the REST API:
-
-[screenshot from settings]
-
-Or via code:
+The plugin can restrict anonymous access for any request to the REST API in the plugin's settings or via code:
 
 ```php
 add_filter( 'rest_api_guard_prevent_anonymous_access', fn () => true );
@@ -71,11 +74,8 @@ add_filter( 'rest_api_guard_prevent_anonymous_access', fn () => true );
 ### Limit Anonymous Access to Specific Namespaces/Routes (Allowlist)
 
 Anonymous users can be granted access only to specific namespaces/routes.
-Requests outside of these paths will be denied.
-
-[screenshot from settings]
-
-Or via code:
+Requests outside of these paths will be denied. This can be configured in the
+plugin's settings or via code:
 
 ```php
 add_filter(
@@ -98,11 +98,8 @@ Anonymous users can be restricted from specific namespaces/routes. This acts as
 a denylist for specific paths that an anonymous user cannot access. The paths
 support regular expressions for matching. The use of the
 [Allowlist](#limit-anonymous-access-to-specific-namespacesroutes-allowlist)
-takes priority over this denylist.
-
-[screenshot from settings]
-
-Or via code:
+takes priority over this denylist.This can be configured in the plugin's
+settings or via code:
 
 ```php
 add_filter(
