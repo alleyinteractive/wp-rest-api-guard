@@ -1,4 +1,4 @@
-# rest-api-guard
+# REST API Guard
 
 Stable tag: 0.1.0
 
@@ -17,7 +17,7 @@ Contributors: srtfisher
 [![Coding Standards](https://github.com/alleyinteractive/wp-rest-api-guard/actions/workflows/coding-standards.yml/badge.svg)](https://github.com/alleyinteractive/wp-rest-api-guard/actions/workflows/coding-standards.yml)
 [![Testing Suite](https://github.com/alleyinteractive/wp-rest-api-guard/actions/workflows/unit-test.yml/badge.svg)](https://github.com/alleyinteractive/wp-rest-api-guard/actions/workflows/unit-test.yml)
 
-Restrict and control access to the REST API
+Restrict and control access to the REST API.
 
 ## Installation
 
