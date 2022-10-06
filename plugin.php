@@ -25,10 +25,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+
+add_filter( 'rest_api_guard_prevent_anonymous_access', fn () => true );
+add_filter( 'rest_api_guard_allow_index_access', fn () => false );
+add_filter( 'rest_api_guard_anonymous_requests_denylist', fn () => "This example\nanother example" );
+
 /**
  * Instantiate the plugin.
  */
 function main() {
+	require_once __DIR__ . '/settings.php';
+
 	add_action( 'rest_pre_dispatch', __NAMESPACE__ . '\on_rest_pre_dispatch', 10, 3 );
 }
 main();
