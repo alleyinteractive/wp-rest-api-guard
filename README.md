@@ -61,8 +61,6 @@ add_filter( 'rest_api_guard_allow_index_access', fn () => true );
 add_filter( 'rest_api_guard_allow_namespace_access', fn ( string $namespace ) => true );
 ```
 
-```
-
 ### Restrict Anonymous Access to the REST API
 
 The plugin can restrict anonymous access for any request to the REST API in the plugin's settings or via code:
