@@ -31,7 +31,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 function main() {
 	require_once __DIR__ . '/settings.php';
 
-	add_action( 'rest_pre_dispatch', __NAMESPACE__ . '\on_rest_pre_dispatch', 10, 3 );
+	add_filter( 'rest_pre_dispatch', __NAMESPACE__ . '\on_rest_pre_dispatch', 10, 3 );
 }
 main();
 
@@ -70,14 +70,14 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 		return true;
 	}
 
-	/**
-	 * Prevent access to the namespace index of the REST API.
-	 *
-	 * @param bool  $prevent    Whether to prevent anonymous access, default false.
-	 * @param string $namespace The namespace of the request.
-	 */
 	if (
 		in_array( substr( $endpoint, 1 ), $server->get_namespaces(), true )
+		/**
+		 * Prevent access to the namespace index of the REST API.
+		 *
+		 * @param bool  $prevent    Whether to prevent anonymous access, default false.
+		 * @param string $namespace The namespace of the request.
+		 */
 		&& false === apply_filters( 'rest_api_guard_allow_namespace_access', $settings['allow_namespace_access'] ?? false, substr( $endpoint, 1 ) )
 	) {
 		return true;

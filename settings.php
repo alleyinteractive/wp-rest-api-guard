@@ -39,7 +39,7 @@ function render_admin_page() {
 		<h2>
 			<?php esc_html_e( 'REST API Guard', 'rest-api-guard' ); ?>
 		</h2>
-		<!-- <p></p> -->
+
 		<?php settings_errors(); ?>
 
 		<form method="post" action="options.php">
@@ -61,7 +61,7 @@ function on_admin_init() {
 		SETTINGS_KEY,
 		SETTINGS_KEY,
 		[
-			'sanitize_callback' => __NAMESPACE__ . '\rest_api_guard_sanitize_settings',
+			'sanitize_callback' => __NAMESPACE__ . '\sanitize_settings',
 			'show_in_rest'      => false,
 			'type'              => 'array',
 		],
@@ -165,7 +165,7 @@ function on_admin_init() {
  * @param array $input The settings to sanitize.
  * @return array
  */
-function rest_api_guard_sanitize_settings( $input ) {
+function sanitize_settings( $input ) {
 	if ( empty( $input ) || ! is_array( $input ) ) {
 		$input = [];
 	}

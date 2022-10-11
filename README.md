@@ -36,9 +36,9 @@ restrict access to the REST API for your WordPress site.
 ### Settings Page
 
 The plugin can be configured via the Settings page (`Settings -> REST API
-Guard`) or via the relevant filter:
+Guard`) or via the relevant filter.
 
-<img width="1276" alt="Screen Shot 2022-10-06 at 4 24 01 PM" src="https://user-images.githubusercontent.com/346399/194411352-aa05e939-3fd1-4e37-a3d5-276c1c5c288f.png">
+![Screenshot of plugin settings screen](https://user-images.githubusercontent.com/346399/194411352-aa05e939-3fd1-4e37-a3d5-276c1c5c288f.png)
 
 ### Preventing Access to User Information (`wp/v2/users`)
 
@@ -78,7 +78,7 @@ plugin's settings or via code:
 ```php
 add_filter(
 	'rest_api_guard_anonymous_requests_allowlist',
-	function ( array $paths, WP_REST_Request $request ) {
+	function ( array $paths, WP_REST_Request $request ): array {
 		// Allow other paths not included here will be denied.
 		$paths[] = 'wp/v2/post';
 		$paths[] = 'custom-namespace/v1/public/*';
@@ -96,13 +96,13 @@ Anonymous users can be restricted from specific namespaces/routes. This acts as
 a denylist for specific paths that an anonymous user cannot access. The paths
 support regular expressions for matching. The use of the
 [Allowlist](#limit-anonymous-access-to-specific-namespacesroutes-allowlist)
-takes priority over this denylist.This can be configured in the plugin's
+takes priority over this denylist. This can be configured in the plugin's
 settings or via code:
 
 ```php
 add_filter(
 	'rest_api_guard_anonymous_requests_denylist',
-	function ( array $paths, WP_REST_Request $request ) {
+	function ( array $paths, WP_REST_Request $request ): array {
 		$paths[] = 'wp/v2/user';
 		$paths[] = 'custom-namespace/v1/private/*';
 
