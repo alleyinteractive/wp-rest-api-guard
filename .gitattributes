@@ -10,6 +10,7 @@
 /.phpcs export-ignore
 /phpunit.xml export-ignore
 /tests export-ignore
+/vendor export-ignore
 /configure.php export-ignore
 /Makefile export-ignore
 
