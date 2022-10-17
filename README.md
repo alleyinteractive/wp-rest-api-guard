@@ -2,9 +2,9 @@
 
 Stable tag: 1.0.0
 
-Requires at least: 5.9
+Requires at least: 6.0
 
-Tested up to: 5.9
+Tested up to: 6.0
 
 Requires PHP: 7.4
 

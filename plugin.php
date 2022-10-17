@@ -6,8 +6,8 @@
  * Version: 1.0.0
  * Author: Sean Fisher
  * Author URI: https://alley.co/
- * Requires at least: 5.9
- * Tested up to: 5.9
+ * Requires at least: 6.0
+ * Tested up to: 6.0
  *
  * Text Domain: plugin_domain
  * Domain Path: /languages/
