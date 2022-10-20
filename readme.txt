@@ -15,7 +15,7 @@ You can install the package via composer:
 
 	composer require alleyinteractive/wp-rest-api-guard
 
-##
+## Usage
 
 The WordPress REST API is generally very public and can share a good deal of
 information with the internet anonymously. This plugin aims to make it easier to
