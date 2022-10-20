@@ -33,11 +33,6 @@ The WordPress REST API is generally very public and can share a good deal of
 information with the internet anonymously. This plugin aims to make it easier to
 restrict access to the REST API for your WordPress site.
 
-Out of the box the plugin can:
-
-- Disable anonymous access to the REST API.
-- Restrict and control anonymous access to the REST API by namespace, path, etc.
-
 ### Settings Page
 
 The plugin can be configured via the Settings page (`Settings -> REST API

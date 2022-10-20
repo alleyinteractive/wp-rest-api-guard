@@ -5,7 +5,7 @@ Tested up to: 6.0
 Requires PHP: 7.4
 License: GPL v2 or later
 Tags: alleyinteractive, rest-api-guard
-Contributors: srtfisher
+Contributors: sean212
 
 Restrict and control access to the REST API.
 
