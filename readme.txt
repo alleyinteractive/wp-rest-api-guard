@@ -17,27 +17,28 @@ You can install the package via composer:
 
 ## Usage
 
-The WordPress REST API is generally very public and can share a good deal of
-information with the internet anonymously. This plugin aims to make it easier to
-restrict access to the REST API for your WordPress site.
+The WordPress REST API is generally very public and can share a good deal of information with the internet anonymously. This plugin aims to make it easier to restrict access to the REST API for your WordPress site.
+
+Out of the box the plugin can:
+
+- Disable anonymous access to the REST API.
+- Restrict and control anonymous access to the REST API by namespace, path, etc.
 
 ### Settings Page
 
-The plugin can be configured via the Settings page (`Settings -> REST API
-Guard`) or via the relevant filter.
+The plugin can be configured via the Settings page (`Settings -> REST API Guard`) or via the relevant filter.
 
 ![Screenshot of plugin settings screen](https://user-images.githubusercontent.com/346399/194411352-aa05e939-3fd1-4e37-a3d5-276c1c5c288f.png)
 
 ### Preventing Access to User Information (`wp/v2/users`)
 
-By default, the plugin will restrict anonymous access to the users endpoint.
-This can be prevented in the plugin's settings or via code:
+By default, the plugin will restrict anonymous access to the users endpoint. This can be prevented in the plugin's settings or via code:
 
 	add_filter( 'rest_api_guard_allow_user_access', fn () => true );
 
 ### Preventing Access to Index (`/`) or Namespace Endpoints (`wp/v2`)
 
-To prevent anonymous users from browing your site and discovering what plugins/post types are setup, the plugin restricts access to the index (`/`) and namespace (`wp/v2`) endpoints. This can be prevented in the plugin's settings or via code:
+To prevent anonymous users from browsing your site and discovering what plugins/post types are setup, the plugin restricts access to the index (`/`) and namespace (`wp/v2`) endpoints. This can be prevented in the plugin's settings or via code:
 
 	// Allow index access.
 	add_filter( 'rest_api_guard_allow_index_access', fn () => true );
@@ -53,9 +54,7 @@ The plugin can restrict anonymous access for any request to the REST API in the 
 
 ### Limit Anonymous Access to Specific Namespaces/Routes (Allowlist)
 
-Anonymous users can be granted access only to specific namespaces/routes.
-Requests outside of these paths will be denied. This can be configured in the
-plugin's settings or via code:
+Anonymous users can be granted access only to specific namespaces/routes. Requests outside of these paths will be denied. This can be configured in the plugin's settings or via code:
 
 	add_filter(
 		'rest_api_guard_anonymous_requests_allowlist',
@@ -72,12 +71,7 @@ plugin's settings or via code:
 
 ### Restrict Anonymous Access to Specific Namespaces/Routes (Denylist)
 
-Anonymous users can be restricted from specific namespaces/routes. This acts as
-a denylist for specific paths that an anonymous user cannot access. The paths
-support regular expressions for matching. The use of the
-[Allowlist](#limit-anonymous-access-to-specific-namespacesroutes-allowlist)
-takes priority over this denylist. This can be configured in the plugin's
-settings or via code:
+Anonymous users can be restricted from specific namespaces/routes. This acts as a denylist for specific paths that an anonymous user cannot access. The paths support regular expressions for matching. The use of the [Allowlist](#limit-anonymous-access-to-specific-namespacesroutes-allowlist) takes priority over this denylist. This can be configured in the plugin's settings or via code:
 
 	add_filter(
 		'rest_api_guard_anonymous_requests_denylist',
