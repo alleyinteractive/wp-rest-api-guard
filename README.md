@@ -12,7 +12,7 @@ License: GPL v2 or later
 
 Tags: alleyinteractive, rest-api-guard
 
-Contributors: srtfisher
+Contributors: sean212
 
 [![Coding Standards](https://github.com/alleyinteractive/wp-rest-api-guard/actions/workflows/coding-standards.yml/badge.svg)](https://github.com/alleyinteractive/wp-rest-api-guard/actions/workflows/coding-standards.yml)
 [![Testing Suite](https://github.com/alleyinteractive/wp-rest-api-guard/actions/workflows/unit-test.yml/badge.svg)](https://github.com/alleyinteractive/wp-rest-api-guard/actions/workflows/unit-test.yml)
@@ -32,6 +32,11 @@ composer require alleyinteractive/wp-rest-api-guard
 The WordPress REST API is generally very public and can share a good deal of
 information with the internet anonymously. This plugin aims to make it easier to
 restrict access to the REST API for your WordPress site.
+
+Out of the box the plugin can:
+
+- Disable anonymous access to the REST API.
+- Restrict and control anonymous access to the REST API by namespace, path, etc.
 
 ### Settings Page
 
