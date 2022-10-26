@@ -7,6 +7,10 @@
 
 namespace Alley\WP\REST_API_Guard;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 add_action( 'admin_menu', __NAMESPACE__ . '\on_admin_menu' );
 add_action( 'admin_init', __NAMESPACE__ . '\on_admin_init' );
 
@@ -132,12 +136,12 @@ function on_admin_init() {
 
 	add_settings_field(
 		'anonymous_requests_allowlist',
-		__( 'Anonyous Request Allowlist', 'rest-api-guard' ),
+		__( 'Anonymous Request Allowlist', 'rest-api-guard' ),
 		__NAMESPACE__ . '\render_field',
 		SETTINGS_KEY,
 		SETTINGS_KEY,
 		[
-			'description' => __( 'Line-seperated allowlist for anonyous requests that should be allowed. All other requests not matching the list will be denied. This setting takes priority over the denylist below. Supports * as a wildcard.', 'rest-api-guard' ),
+			'description' => __( 'Line-seperated allowlist for anonymous requests that should be allowed. All other requests not matching the list will be denied. This setting takes priority over the denylist below. Supports * as a wildcard.', 'rest-api-guard' ),
 			'filter'      => 'rest_api_guard_anonymous_requests_allowlist',
 			'id'          => 'anonymous_requests_allowlist',
 			'type'        => 'textarea',
@@ -146,12 +150,12 @@ function on_admin_init() {
 
 	add_settings_field(
 		'anonymous_requests_denylist',
-		__( 'Anonyous Request Allowlist', 'rest-api-guard' ),
+		__( 'Anonymous Request Denylist', 'rest-api-guard' ),
 		__NAMESPACE__ . '\render_field',
 		SETTINGS_KEY,
 		SETTINGS_KEY,
 		[
-			'description' => __( 'Line-seperated allowlist for anonyous requests that should be denied. All other requests not matching the list will be allowed. Supports * as a wildcard.', 'rest-api-guard' ),
+			'description' => __( 'Line-seperated denylist for anonymous requests that should be denied. All other requests not matching the list will be allowed. Supports * as a wildcard.', 'rest-api-guard' ),
 			'filter'      => 'rest_api_guard_anonymous_requests_denylist',
 			'id'          => 'anonymous_requests_denylist',
 			'type'        => 'textarea',
@@ -175,8 +179,8 @@ function sanitize_settings( $input ) {
 		'allow_index_access'           => ! empty( $input['allow_index_access'] ),
 		'allow_namespace_access'       => ! empty( $input['allow_namespace_access'] ),
 		'allow_user_access'            => ! empty( $input['allow_user_access'] ),
-		'anonymous_requests_allowlist' => ! empty( $input['anonymous_requests_allowlist'] ) ? sanitize_text_field( $input['anonymous_requests_allowlist'] ) : '',
-		'anonymous_requests_denylist'  => ! empty( $input['anonymous_requests_denylist'] ) ? sanitize_text_field( $input['anonymous_requests_denylist'] ) : '',
+		'anonymous_requests_allowlist' => ! empty( $input['anonymous_requests_allowlist'] ) ? sanitize_textarea_field( $input['anonymous_requests_allowlist'] ) : '',
+		'anonymous_requests_denylist'  => ! empty( $input['anonymous_requests_denylist'] ) ? sanitize_textarea_field( $input['anonymous_requests_denylist'] ) : '',
 	];
 }
 
