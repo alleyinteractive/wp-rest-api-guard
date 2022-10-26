@@ -7,6 +7,10 @@
 
 namespace Alley\WP\REST_API_Guard;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 add_action( 'admin_menu', __NAMESPACE__ . '\on_admin_menu' );
 add_action( 'admin_init', __NAMESPACE__ . '\on_admin_init' );
 
