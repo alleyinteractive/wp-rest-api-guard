@@ -175,8 +175,8 @@ function sanitize_settings( $input ) {
 		'allow_index_access'           => ! empty( $input['allow_index_access'] ),
 		'allow_namespace_access'       => ! empty( $input['allow_namespace_access'] ),
 		'allow_user_access'            => ! empty( $input['allow_user_access'] ),
-		'anonymous_requests_allowlist' => ! empty( $input['anonymous_requests_allowlist'] ) ? sanitize_text_field( $input['anonymous_requests_allowlist'] ) : '',
-		'anonymous_requests_denylist'  => ! empty( $input['anonymous_requests_denylist'] ) ? sanitize_text_field( $input['anonymous_requests_denylist'] ) : '',
+		'anonymous_requests_allowlist' => ! empty( $input['anonymous_requests_allowlist'] ) ? sanitize_textarea_field( $input['anonymous_requests_allowlist'] ) : '',
+		'anonymous_requests_denylist'  => ! empty( $input['anonymous_requests_denylist'] ) ? sanitize_textarea_field( $input['anonymous_requests_denylist'] ) : '',
 	];
 }
 
