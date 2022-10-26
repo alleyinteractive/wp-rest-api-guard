@@ -132,12 +132,12 @@ function on_admin_init() {
 
 	add_settings_field(
 		'anonymous_requests_allowlist',
-		__( 'Anonyous Request Allowlist', 'rest-api-guard' ),
+		__( 'Anonymous Request Allowlist', 'rest-api-guard' ),
 		__NAMESPACE__ . '\render_field',
 		SETTINGS_KEY,
 		SETTINGS_KEY,
 		[
-			'description' => __( 'Line-seperated allowlist for anonyous requests that should be allowed. All other requests not matching the list will be denied. This setting takes priority over the denylist below. Supports * as a wildcard.', 'rest-api-guard' ),
+			'description' => __( 'Line-seperated allowlist for anonymous requests that should be allowed. All other requests not matching the list will be denied. This setting takes priority over the denylist below. Supports * as a wildcard.', 'rest-api-guard' ),
 			'filter'      => 'rest_api_guard_anonymous_requests_allowlist',
 			'id'          => 'anonymous_requests_allowlist',
 			'type'        => 'textarea',
@@ -146,12 +146,12 @@ function on_admin_init() {
 
 	add_settings_field(
 		'anonymous_requests_denylist',
-		__( 'Anonyous Request Allowlist', 'rest-api-guard' ),
+		__( 'Anonymous Request Denylist', 'rest-api-guard' ),
 		__NAMESPACE__ . '\render_field',
 		SETTINGS_KEY,
 		SETTINGS_KEY,
 		[
-			'description' => __( 'Line-seperated allowlist for anonyous requests that should be denied. All other requests not matching the list will be allowed. Supports * as a wildcard.', 'rest-api-guard' ),
+			'description' => __( 'Line-seperated denylist for anonymous requests that should be denied. All other requests not matching the list will be allowed. Supports * as a wildcard.', 'rest-api-guard' ),
 			'filter'      => 'rest_api_guard_anonymous_requests_denylist',
 			'id'          => 'anonymous_requests_denylist',
 			'type'        => 'textarea',
