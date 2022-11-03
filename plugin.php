@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name: rest-api-guard
+ * Plugin Name: REST API Guard
  * Plugin URI: https://github.com/alleyinteractive/wp-rest-api-guard
  * Description: Restrict and control access to the REST API
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: Sean Fisher
  * Author URI: https://alley.co/
  * Requires at least: 6.0
