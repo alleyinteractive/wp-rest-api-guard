@@ -3,11 +3,11 @@
  * Plugin Name: REST API Guard
  * Plugin URI: https://github.com/alleyinteractive/wp-rest-api-guard
  * Description: Restrict and control access to the REST API
- * Version: 1.0.2
+ * Version: 1.0.3
  * Author: Sean Fisher
  * Author URI: https://alley.co/
  * Requires at least: 6.0
- * Tested up to: 6.0
+ * Tested up to: 6.3
  *
  * Text Domain: plugin_domain
  * Domain Path: /languages/
