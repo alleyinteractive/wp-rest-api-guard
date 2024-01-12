@@ -1,0 +1,18 @@
+name: Built Release
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  built-release:
+    uses: alleyinteractive/.github/.github/workflows/built-release.yml@main
+    if: ${{ github.repository != 'alleyinteractive/create-wordpress-plugin' }}
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+    with:
+      node: 16
+      php: '8.2'
+      composer_install: true
+      draft: false
