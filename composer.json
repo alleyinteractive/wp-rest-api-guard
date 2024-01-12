@@ -17,7 +17,7 @@
         }
     ],
     "require": {
-        "php": "^7.4|^8.0",
+        "php": "^8.0",
         "firebase/php-jwt": "^6.10"
     },
     "require-dev": {
@@ -31,6 +31,9 @@
             "alleyinteractive/composer-wordpress-autoloader": true,
             "dealerdirect/phpcodesniffer-composer-installer": true,
             "pestphp/pest-plugin": true
+        },
+        "platform": {
+            "php": "8.0"
         },
         "sort-packages": true
     },
