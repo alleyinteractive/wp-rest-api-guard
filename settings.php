@@ -7,6 +7,8 @@
 
 namespace Alley\WP\REST_API_Guard;
 
+use Firebase\JWT\JWT;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -161,6 +163,28 @@ function on_admin_init() {
 			'type'        => 'textarea',
 		],
 	);
+
+	if ( class_exists( JWT::class ) ) {
+		add_settings_field(
+			'authentication_jwt',
+			__( 'Require Authentication with JSON Web Token', 'rest-api-guard' ),
+			__NAMESPACE__ . '\render_field',
+			SETTINGS_KEY,
+			SETTINGS_KEY,
+			[
+				'description' => __( 'Require authentication with a JSON Web Token (JWT) for all anonymous requests.', 'rest-api-guard' ),
+				'additional'  => sprintf(
+					/* translators: 1: The JWT audience. 2: The JWT issuer. */
+					__( 'When enabled, the plugin will require anonymous users to pass an "Authorization: Bearer <token>" with the token being a valid JSON Web Token (JWT). The plugin will be expecting a JWT with an audience of "%1$s", issuer of "%2$s", and secret that matches the value of the "rest_api_guard_jwt_secret" option.', 'rest-api-guard' ),
+					get_jwt_audience(),
+					get_jwt_issuer(),
+				),
+				'filter'      => 'rest_api_guard_authentication_jwt',
+				'id'          => 'authentication_jwt',
+				'type'        => 'checkbox',
+			],
+		);
+	}
 }
 
 /**
@@ -230,6 +254,13 @@ function render_field( array $input ) {
 		default:
 			esc_html_e( 'Unknown field type.', 'rest-api-guard' );
 			break;
+	}
+
+	if ( ! empty( $input['additional'] ) ) {
+		printf(
+			'<p><em>%s</em></p>',
+			esc_html( $input['additional'] )
+		);
 	}
 
 	if ( $disabled ) {
