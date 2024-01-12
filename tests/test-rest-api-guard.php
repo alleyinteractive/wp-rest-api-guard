@@ -217,14 +217,14 @@ class Test_REST_API_Guard extends Test_Case {
 	 * @dataProvider jwtDataProvider
 	 */
 	public function test_jwt_authentication( $type, $token ) {
+		$this->expectApplied( 'rest_api_guard_authentication_jwt' );
+
 		add_filter( 'rest_api_guard_authentication_jwt', fn () => true );
 
-		$this->expectApplied( 'rest_api_guard_authentication_jwt' )->andReturnTrue();
-
 		if ( 'valid' === $type ) {
-			$this->expectApplied( 'rest_api_guard_jwt_issuer' )->andReturnString();
-			$this->expectApplied( 'rest_api_guard_jwt_audience' )->andReturnString();
-			$this->expectApplied( 'rest_api_guard_jwt_secret' )->andReturnString();
+			$this->expectApplied( 'rest_api_guard_jwt_issuer' );
+			$this->expectApplied( 'rest_api_guard_jwt_audience' );
+			$this->expectApplied( 'rest_api_guard_jwt_secret' );
 		}
 
 
