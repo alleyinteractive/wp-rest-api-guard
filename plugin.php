@@ -310,3 +310,7 @@ function generate_jwt(): string {
 		'HS256'
 	);
 }
+
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	require_once __DIR__ . '/cli.php';
+}
