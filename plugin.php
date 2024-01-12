@@ -92,8 +92,6 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 		return true;
 	}
 
-	// todo: check settings.
-
 	/**
 	 * Filter the allowlist for allowed anonymous requests.
 	 *
@@ -108,6 +106,11 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 		}
 
 		foreach ( $allowlist as $allowlist_endpoint ) {
+			// Strip off /wp-json from the beginning of the endpoint if it was included.
+			if ( 0 === strpos( $allowlist_endpoint, '/wp-json' ) ) {
+				$allowlist_endpoint = substr( $allowlist_endpoint, 8 );
+			}
+
 			if ( preg_match( '/' . str_replace( '\*', '.*', preg_quote( $allowlist_endpoint, '/' ) ) . '/', $endpoint ) ) {
 				return false;
 			}
@@ -131,6 +134,11 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 		}
 
 		foreach ( $denylist as $denylist_endpoint ) {
+			// Strip off /wp-json from the beginning of the endpoint if it was included.
+			if ( 0 === strpos( $denylist_endpoint, '/wp-json' ) ) {
+				$denylist_endpoint = substr( $denylist_endpoint, 8 );
+			}
+
 			if ( preg_match( '/' . str_replace( '\*', '.*', preg_quote( $denylist_endpoint, '/' ) ) . '/', $endpoint ) ) {
 				return true;
 			}

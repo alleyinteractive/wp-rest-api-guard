@@ -5,6 +5,7 @@ All notable changes to `wp-rest-guard` will be documented in this file.
 ## v1.0.4 - 2024-01-12
 
 - Fixing an issue splitting lines by `\n` instead of `\r\n` on Windows.
+- Allow `/wp-json/` to be included in the allow/deny lists.
 
 ## v1.0.3 - 2023-08-28
 
