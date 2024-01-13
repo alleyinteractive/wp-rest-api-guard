@@ -3,7 +3,7 @@
  * Plugin Name: REST API Guard
  * Plugin URI: https://github.com/alleyinteractive/wp-rest-api-guard
  * Description: Restrict and control access to the REST API
- * Version: 1.0.3
+ * Version: 1.0.4
  * Author: Sean Fisher
  * Author URI: https://alley.co/
  * Requires at least: 6.0
@@ -92,8 +92,6 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 		return true;
 	}
 
-	// todo: check settings.
-
 	/**
 	 * Filter the allowlist for allowed anonymous requests.
 	 *
@@ -104,10 +102,15 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 
 	if ( ! empty( $allowlist ) ) {
 		if ( ! is_array( $allowlist ) ) {
-			$allowlist = explode( "\n", $allowlist );
+			$allowlist = preg_split( '/\r\n|\r|\n/', $allowlist );
 		}
 
 		foreach ( $allowlist as $allowlist_endpoint ) {
+			// Strip off /wp-json from the beginning of the endpoint if it was included.
+			if ( 0 === strpos( $allowlist_endpoint, '/wp-json' ) ) {
+				$allowlist_endpoint = substr( $allowlist_endpoint, 8 );
+			}
+
 			if ( preg_match( '/' . str_replace( '\*', '.*', preg_quote( $allowlist_endpoint, '/' ) ) . '/', $endpoint ) ) {
 				return false;
 			}
@@ -127,10 +130,15 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 
 	if ( ! empty( $denylist ) ) {
 		if ( ! is_array( $denylist ) ) {
-			$denylist = explode( "\n", $denylist );
+			$denylist = preg_split( '/\r\n|\r|\n/', $denylist );
 		}
 
 		foreach ( $denylist as $denylist_endpoint ) {
+			// Strip off /wp-json from the beginning of the endpoint if it was included.
+			if ( 0 === strpos( $denylist_endpoint, '/wp-json' ) ) {
+				$denylist_endpoint = substr( $denylist_endpoint, 8 );
+			}
+
 			if ( preg_match( '/' . str_replace( '\*', '.*', preg_quote( $denylist_endpoint, '/' ) ) . '/', $endpoint ) ) {
 				return true;
 			}
