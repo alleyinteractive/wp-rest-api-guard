@@ -3,7 +3,7 @@
  * Plugin Name: REST API Guard
  * Plugin URI: https://github.com/alleyinteractive/wp-rest-api-guard
  * Description: Restrict and control access to the REST API
- * Version: 1.0.4
+ * Version: 1.1.0
  * Author: Sean Fisher
  * Author URI: https://alley.co/
  * Requires at least: 6.0
@@ -17,6 +17,9 @@
 
 namespace Alley\WP\REST_API_Guard;
 
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+use InvalidArgumentException;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Server;
@@ -29,6 +32,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Instantiate the plugin.
  */
 function main() {
+	if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
+		require_once __DIR__ . '/vendor/autoload.php';
+	}
+
 	require_once __DIR__ . '/settings.php';
 
 	add_filter( 'rest_pre_dispatch', __NAMESPACE__ . '\on_rest_pre_dispatch', 10, 3 );
@@ -40,13 +47,67 @@ main();
  *
  * @param WP_REST_Server  $server  Server instance.
  * @param WP_REST_Request $request The request object.
- * @return bool
+ * @return WP_Error|bool
+ *
+ * @throws InvalidArgumentException If the JWT is invalid.
  */
-function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Request $request ): bool {
+function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Request $request ): WP_Error|bool {
 	$settings = (array) get_option( SETTINGS_KEY );
 
 	if ( ! is_array( $settings ) ) {
 		$settings = [];
+	}
+
+	/**
+	 * Check if the anonymous request requires a JSON Web Token (JWT).
+	 *
+	 * @param bool             $require Whether to require a JWT, default false.
+	 * @param \WP_REST_Request $request REST API Request.
+	 */
+	if ( class_exists( JWT::class ) && true === apply_filters( 'rest_api_guard_authentication_jwt', $settings['authentication_jwt'] ?? false, $request ) ) {
+		try {
+			$jwt = $request->get_header( 'Authorization' );
+
+			if ( empty( $jwt ) ) {
+				throw new InvalidArgumentException( __( 'No authorization header was found.', 'rest-api-guard' ) );
+			}
+
+			if ( 0 !== strpos( $jwt, 'Bearer ' ) ) {
+				throw new InvalidArgumentException( __( 'Invalid authorization header.', 'rest-api-guard' ) );
+			}
+
+			$decoded = JWT::decode(
+				substr( $jwt, 7 ),
+				new Key( get_jwt_secret(), 'HS256' ),
+			);
+
+			// Verify the contents of the JWT.
+			if ( empty( $decoded->iss ) || get_jwt_issuer() !== $decoded->iss ) {
+				throw new InvalidArgumentException( __( 'Invalid JWT issuer.', 'rest-api-guard' ) );
+			}
+
+			if ( empty( $decoded->aud ) || get_jwt_audience() !== $decoded->aud ) {
+				throw new InvalidArgumentException( __( 'Invalid JWT audience.', 'rest-api-guard' ) );
+			}
+		} catch ( \Exception $error ) {
+			return new WP_Error(
+				'rest_api_guard_unauthorized',
+				/**
+				 * Filter the authorization error message.
+				 *
+				 * @param string     $message The error message.
+				 * @param \Throwable $error The error that occurred.
+				 */
+				apply_filters(
+					'rest_api_guard_invalid_jwt_message',
+					__( 'Invalid authorization header.', 'rest-api-guard' ),
+					$error,
+				),
+				[
+					'status' => rest_authorization_required_code(),
+				]
+			);
+		}
 	}
 
 	/**
@@ -161,7 +222,11 @@ function on_rest_pre_dispatch( $pre, $server, $request ) {
 		return $pre;
 	}
 
-	if ( should_prevent_anonymous_access( $server, $request ) ) {
+	$should_prevent = should_prevent_anonymous_access( $server, $request );
+
+	if ( is_wp_error( $should_prevent ) ) {
+		return $should_prevent;
+	} elseif ( $should_prevent ) {
 		return new WP_Error(
 			'rest_api_guard_unauthorized',
 			/**
@@ -180,4 +245,72 @@ function on_rest_pre_dispatch( $pre, $server, $request ) {
 	}
 
 	return $pre;
+}
+
+/**
+ * Get the JSON Web Token (JWT) issuer.
+ *
+ * @return string
+ */
+function get_jwt_issuer(): string {
+	/**
+	 * Filter the issuer of the JWT.
+	 *
+	 * @param string $issuer The issuer of the JWT.
+	 */
+	return apply_filters( 'rest_api_guard_jwt_issuer', get_bloginfo( 'url' ) );
+}
+
+/**
+ * Get the JSON Web Token (JWT) audience.
+ *
+ * @return string
+ */
+function get_jwt_audience(): string {
+	/**
+	 * Filter the audience of the JWT.
+	 *
+	 * @param string $audience The audience of the JWT.
+	 */
+	return apply_filters( 'rest_api_guard_jwt_audience', 'wordpress-rest-api' );
+}
+
+/**
+ * Get the JSON Web Token (JWT) secret.
+ *
+ * @return string
+ */
+function get_jwt_secret(): string {
+	// Generate the JWT secret if it does not exist.
+	if ( empty( get_option( 'rest_api_guard_jwt_secret' ) ) ) {
+		update_option( 'rest_api_guard_jwt_secret', wp_generate_password( 12, false ) );
+	}
+
+	/**
+	 * Filter the secret of the JWT. By default, the WordPress secret key is used.
+	 *
+	 * @param string $secret The secret of the JWT.
+	 */
+	return apply_filters( 'rest_api_guard_jwt_secret', get_option( 'rest_api_guard_jwt_secret' ) );
+}
+
+/**
+ * Generate a JSON Web Token (JWT).
+ *
+ * @return string
+ */
+function generate_jwt(): string {
+	return JWT::encode(
+		[
+			'iss' => get_jwt_issuer(),
+			'aud' => get_jwt_audience(),
+			'iat' => time(),
+		],
+		get_jwt_secret(),
+		'HS256'
+	);
+}
+
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	require_once __DIR__ . '/cli.php';
 }

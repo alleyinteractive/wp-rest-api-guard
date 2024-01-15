@@ -1,6 +1,10 @@
 <?php
 namespace Alley\WP\REST_API_Guard\Tests;
 
+use Firebase\JWT\JWT;
+
+use function Alley\WP\REST_API_Guard\generate_jwt;
+
 use const Alley\WP\REST_API_Guard\SETTINGS_KEY;
 
 /**
@@ -207,5 +211,39 @@ class Test_REST_API_Guard extends Test_Case {
 		$this->get( rest_url( '/wp/v2/posts/' . static::factory()->post->create() ) )->assertOk();
 		$this->get( rest_url( '/wp/v2/tags' ) )->assertOk();
 		$this->get( rest_url( '/wp/v2/categories' ) )->assertUnauthorized();
+	}
+
+	/**
+	 * @dataProvider jwtDataProvider
+	 */
+	public function test_jwt_authentication( $type, $token ) {
+		$this->expectApplied( 'rest_api_guard_authentication_jwt' );
+
+		add_filter( 'rest_api_guard_authentication_jwt', fn () => true );
+
+		if ( 'valid' === $type ) {
+			$this->expectApplied( 'rest_api_guard_jwt_issuer' );
+			$this->expectApplied( 'rest_api_guard_jwt_audience' );
+			$this->expectApplied( 'rest_api_guard_jwt_secret' );
+		}
+
+
+		$request = $this
+			->with_header( 'Authorization', "Bearer $token" )
+			->get( '/wp-json/wp/v2/posts' );
+
+		if ( 'valid' === $type ) {
+			$request->assertOk();
+		} else {
+			$request->assertUnauthorized();
+		}
+	}
+
+	public static function jwtDataProvider(): array {
+		return [
+			'valid' => [ 'valid', generate_jwt() ],
+			'invalid' => [ 'invalid', 'invalid' ],
+			'empty' => [ 'invalid', '' ],
+		];
 	}
 }

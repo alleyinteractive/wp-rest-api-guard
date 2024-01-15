@@ -2,6 +2,11 @@
 
 All notable changes to `wp-rest-guard` will be documented in this file.
 
+## v1.1.0 - 2024-012-12
+
+- Drops support for PHP 7.4 and requires PHP 8.0.
+- Add feature to allow anonymous authentication with a JSON Web Token (JWT).
+
 ## v1.0.4 - 2024-01-12
 
 - Fixing an issue splitting lines by `\n` instead of `\r\n` on Windows.
