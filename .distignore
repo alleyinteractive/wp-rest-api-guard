@@ -1,3 +1,4 @@
+# Ignore file used during the push to WordPress.org only.
 .DS_Store
 Thumbs.db
 wp-cli.local.yml
@@ -20,3 +21,4 @@ tests
 .phpcs
 Makefile
 .github
+.git

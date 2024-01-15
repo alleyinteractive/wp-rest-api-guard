@@ -1,3 +1,4 @@
+# Ignore file used during the push to the *-built branches.
 .DS_Store
 Thumbs.db
 wp-cli.local.yml
