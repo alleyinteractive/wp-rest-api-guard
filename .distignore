@@ -19,3 +19,4 @@ phpunit.xml
 tests
 .phpcs
 Makefile
+.github
