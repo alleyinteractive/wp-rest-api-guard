@@ -214,9 +214,9 @@ class Test_REST_API_Guard extends Test_Case {
 	}
 
 	/**
-	 * @dataProvider jwtDataProvider
+	 * @dataProvider jwtDataProviderAnonymous
 	 */
-	public function test_jwt_authentication( $type, $token ) {
+	public function test_jwt_authentication_anonymous( string $type, string $token ) {
 		$this->expectApplied( 'rest_api_guard_authentication_jwt' );
 
 		add_filter( 'rest_api_guard_authentication_jwt', fn () => true );
@@ -237,9 +237,12 @@ class Test_REST_API_Guard extends Test_Case {
 		} else {
 			$request->assertUnauthorized();
 		}
+
+		// Ensure they are unauthenticated.
+		$this->get( '/wp-json/wp/v2/users/me' )->assertUnauthorized();
 	}
 
-	public static function jwtDataProvider(): array {
+	public static function jwtDataProviderAnonymous(): array {
 		return [
 			'valid' => [ 'valid', generate_jwt() ],
 			'invalid' => [ 'invalid', 'invalid' ],

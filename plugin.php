@@ -23,6 +23,7 @@ use InvalidArgumentException;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Server;
+use WP_User;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -297,18 +298,29 @@ function get_jwt_secret(): string {
 /**
  * Generate a JSON Web Token (JWT).
  *
+ * The JWT payload is intentionally not filtered to prevent
+ *
+ * @param int|null     $expiration The expiration time of the JWT in seconds or null for no expiration.
+ * @param WP_User|null $user The user to include in the JWT or null for no user.
  * @return string
  */
-function generate_jwt(): string {
-	return JWT::encode(
-		[
-			'iss' => get_jwt_issuer(),
-			'aud' => get_jwt_audience(),
-			'iat' => time(),
-		],
-		get_jwt_secret(),
-		'HS256'
-	);
+function generate_jwt( ?int $expiration = null, ?WP_User $user = null ): string {
+	$payload = [
+		'iss' => get_jwt_issuer(),
+		'aud' => get_jwt_audience(),
+		'iat' => time(),
+	];
+
+	if ( null !== $expiration ) {
+		$payload['exp'] = time() + $expiration;
+	}
+
+	if ( null !== $user ) {
+		$payload['sub']        = $user->ID;
+		$payload['user_login'] = $user->user_login;
+	}
+
+	return JWT::encode( $payload, get_jwt_secret(), 'HS256' );
 }
 
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
