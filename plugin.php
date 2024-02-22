@@ -115,14 +115,15 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 					 * Filter the authorization error message.
 					 *
 					 * @param string     $message The error message being returned.
-					 * @param string     $error_message The error message from the exception.
 					 * @param \Throwable $error The error that occurred.
 					 */
 					apply_filters(
 						'rest_api_guard_invalid_jwt_message',
-						/* translators: %s: The error message. */
-						__( 'Error authentication with token: %s', 'rest-api-guard' ),
-						$error->getMessage(),
+						sprintf(
+							/* translators: %s: The error message. */
+							__( 'Error authentication with token: %s', 'rest-api-guard' ),
+							$error->getMessage(),
+						),
 						$error,
 					),
 					[

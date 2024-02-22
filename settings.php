@@ -234,6 +234,8 @@ function sanitize_settings( $input ) {
 		'allow_user_access'            => ! empty( $input['allow_user_access'] ),
 		'anonymous_requests_allowlist' => ! empty( $input['anonymous_requests_allowlist'] ) ? sanitize_textarea_field( $input['anonymous_requests_allowlist'] ) : '',
 		'anonymous_requests_denylist'  => ! empty( $input['anonymous_requests_denylist'] ) ? sanitize_textarea_field( $input['anonymous_requests_denylist'] ) : '',
+		'authentication_jwt'           => ! empty( $input['authentication_jwt'] ),
+		'user_authentication_jwt'      => ! empty( $input['user_authentication_jwt'] ),
 	];
 }
 
