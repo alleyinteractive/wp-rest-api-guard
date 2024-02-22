@@ -306,7 +306,7 @@ function get_jwt_audience(): string {
 function get_jwt_secret(): string {
 	// Generate the JWT secret if it does not exist.
 	if ( empty( get_option( 'rest_api_guard_jwt_secret' ) ) ) {
-		update_option( 'rest_api_guard_jwt_secret', wp_generate_password( 24, false ) );
+		update_option( 'rest_api_guard_jwt_secret', wp_generate_password( 32, false ) );
 	}
 
 	/**

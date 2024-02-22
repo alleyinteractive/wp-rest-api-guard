@@ -5,6 +5,8 @@ All notable changes to `wp-rest-guard` will be documented in this file.
 ## v1.2.0 - 2024-02-22
 
 - Add support for authenticated users interacting with the REST API.
+- Allow settings to be completely disabled via code.
+- Increase the default length of the JWT secret to 32 characters.
 
 ## v1.1.1 - 2024-01-15
 
