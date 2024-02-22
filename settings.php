@@ -27,6 +27,15 @@ const SETTINGS_KEY = 'rest_api_guard';
  * Register the Admin Settings page.
  */
 function on_admin_menu() {
+	/**
+	 * Filter to disable the admin settings page.
+	 *
+	 * @param bool $disable Whether to disable the admin settings page.
+	 */
+	if ( true === apply_filters( 'rest_api_guard_disable_admin_settings', false ) ) {
+		return;
+	}
+
 	add_options_page(
 		__( 'REST API Guard', 'rest-api-guard' ),
 		__( 'REST API Guard', 'rest-api-guard' ),
