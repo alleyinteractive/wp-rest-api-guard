@@ -23,17 +23,13 @@
     "require-dev": {
         "alleyinteractive/alley-coding-standards": "^2.0",
         "alleyinteractive/composer-wordpress-autoloader": "^1.0",
-        "mantle-framework/testkit": "^0.9",
-        "nunomaduro/collision": "^5.0"
+        "mantle-framework/testkit": "^0.12"
     },
     "config": {
         "allow-plugins": {
             "alleyinteractive/composer-wordpress-autoloader": true,
             "dealerdirect/phpcodesniffer-composer-installer": true,
             "pestphp/pest-plugin": true
-        },
-        "platform": {
-            "php": "8.0"
         },
         "sort-packages": true
     },

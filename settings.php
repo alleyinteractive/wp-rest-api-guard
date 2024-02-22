@@ -184,6 +184,26 @@ function on_admin_init() {
 				'type'        => 'checkbox',
 			],
 		);
+
+		add_settings_field(
+			'user_authentication_jwt',
+			__( 'Allow User Authentication with JSON Web Token', 'rest-api-guard' ),
+			__NAMESPACE__ . '\render_field',
+			SETTINGS_KEY,
+			SETTINGS_KEY,
+			[
+				'description' => __( 'Allow user authentication with a JSON Web Token (JWT) for all requests.', 'rest-api-guard' ),
+				'additional'  => sprintf(
+					/* translators: 1: The JWT audience. 2: The JWT issuer. */
+					__( 'When enabled, the plugin will allow JWTs to be generated against authenticated users. They can be passed as a "Authorization: Bearer <token>" with the token being a valid JSON Web Token (JWT). The plugin will be expecting a JWT with an audience of "%1$s", issuer of "%2$s", and secret that matches the value of the "rest_api_guard_jwt_secret" option.', 'rest-api-guard' ),
+					get_jwt_audience(),
+					get_jwt_issuer(),
+				),
+				'filter'      => 'rest_api_guard_user_authentication_jwt',
+				'id'          => 'user_authentication_jwt',
+				'type'        => 'checkbox',
+			],
+		);
 	}
 }
 

@@ -3,7 +3,7 @@
  * Plugin Name: REST API Guard
  * Plugin URI: https://github.com/alleyinteractive/wp-rest-api-guard
  * Description: Restrict and control access to the REST API
- * Version: 1.1.2
+ * Version: 1.2.0
  * Author: Sean Fisher
  * Author URI: https://alley.co/
  * Requires at least: 6.0
@@ -59,55 +59,77 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 		$settings = [];
 	}
 
-	/**
-	 * Check if the anonymous request requires a JSON Web Token (JWT).
-	 *
-	 * @param bool             $require Whether to require a JWT, default false.
-	 * @param \WP_REST_Request $request REST API Request.
-	 */
-	if ( class_exists( JWT::class ) && true === apply_filters( 'rest_api_guard_authentication_jwt', $settings['authentication_jwt'] ?? false, $request ) ) {
-		try {
-			$jwt = $request->get_header( 'Authorization' );
+	if ( class_exists( JWT::class ) ) {
+		/**
+		 * Check if the anonymous request requires a JSON Web Token (JWT).
+		 *
+		 * @param bool             $require Whether to require a JWT, default false.
+		 * @param \WP_REST_Request $request REST API Request.
+		 */
+		$require_anonymous_jwt = true === apply_filters( 'rest_api_guard_authentication_jwt', $settings['authentication_jwt'] ?? false, $request );
+		$allow_user_jwt        = true === apply_filters( 'rest_api_guard_user_authentication_jwt', $settings['user_authentication_jwt'] ?? false, $request );
 
-			if ( empty( $jwt ) ) {
-				throw new InvalidArgumentException( __( 'No authorization header was found.', 'rest-api-guard' ) );
+		if ( $require_anonymous_jwt || $allow_user_jwt ) {
+			try {
+				$jwt = $request->get_header( 'Authorization' );
+
+				if ( empty( $jwt ) && $require_anonymous_jwt ) {
+					throw new InvalidArgumentException( __( 'No authorization header token was found and is required for this request.', 'rest-api-guard' ) );
+				}
+
+				if ( ! empty( $jwt ) ) {
+					if ( 0 !== strpos( $jwt, 'Bearer ' ) ) {
+						throw new InvalidArgumentException( __( 'Invalid authorization header.', 'rest-api-guard' ) );
+					}
+
+					$decoded = JWT::decode(
+						substr( $jwt, 7 ),
+						new Key( get_jwt_secret(), 'HS256' ),
+					);
+
+					// Verify the contents of the JWT.
+					if ( empty( $decoded->iss ) || get_jwt_issuer() !== $decoded->iss ) {
+						throw new InvalidArgumentException( __( 'Invalid JWT issuer.', 'rest-api-guard' ) );
+					}
+
+					if ( empty( $decoded->aud ) || get_jwt_audience() !== $decoded->aud ) {
+						throw new InvalidArgumentException( __( 'Invalid JWT audience.', 'rest-api-guard' ) );
+					}
+
+					if ( $allow_user_jwt && ! empty( $decoded->sub ) ) {
+						$user = get_user_by( 'id', $decoded->sub );
+
+						if ( ! $user instanceof WP_User ) {
+							throw new InvalidArgumentException( __( 'Invalid user in JWT sub.', 'rest-api-guard' ) );
+						}
+
+						wp_set_current_user( $user->ID );
+
+						return false;
+					}
+				}
+			} catch ( \Exception $error ) {
+				return new WP_Error(
+					'rest_api_guard_unauthorized',
+					/**
+					 * Filter the authorization error message.
+					 *
+					 * @param string     $message The error message being returned.
+					 * @param string     $error_message The error message from the exception.
+					 * @param \Throwable $error The error that occurred.
+					 */
+					apply_filters(
+						'rest_api_guard_invalid_jwt_message',
+						/* translators: %s: The error message. */
+						__( 'Error authentication with token: %s', 'rest-api-guard' ),
+						$error->getMessage(),
+						$error,
+					),
+					[
+						'status' => rest_authorization_required_code(),
+					]
+				);
 			}
-
-			if ( 0 !== strpos( $jwt, 'Bearer ' ) ) {
-				throw new InvalidArgumentException( __( 'Invalid authorization header.', 'rest-api-guard' ) );
-			}
-
-			$decoded = JWT::decode(
-				substr( $jwt, 7 ),
-				new Key( get_jwt_secret(), 'HS256' ),
-			);
-
-			// Verify the contents of the JWT.
-			if ( empty( $decoded->iss ) || get_jwt_issuer() !== $decoded->iss ) {
-				throw new InvalidArgumentException( __( 'Invalid JWT issuer.', 'rest-api-guard' ) );
-			}
-
-			if ( empty( $decoded->aud ) || get_jwt_audience() !== $decoded->aud ) {
-				throw new InvalidArgumentException( __( 'Invalid JWT audience.', 'rest-api-guard' ) );
-			}
-		} catch ( \Exception $error ) {
-			return new WP_Error(
-				'rest_api_guard_unauthorized',
-				/**
-				 * Filter the authorization error message.
-				 *
-				 * @param string     $message The error message.
-				 * @param \Throwable $error The error that occurred.
-				 */
-				apply_filters(
-					'rest_api_guard_invalid_jwt_message',
-					__( 'Invalid authorization header.', 'rest-api-guard' ),
-					$error,
-				),
-				[
-					'status' => rest_authorization_required_code(),
-				]
-			);
 		}
 	}
 
@@ -300,11 +322,13 @@ function get_jwt_secret(): string {
  *
  * The JWT payload is intentionally not filtered to prevent
  *
- * @param int|null     $expiration The expiration time of the JWT in seconds or null for no expiration.
- * @param WP_User|null $user The user to include in the JWT or null for no user.
+ * @param int|null         $expiration The expiration time of the JWT in seconds or null for no expiration.
+ * @param WP_User|int|null $user The user to include in the JWT or null for no user.
  * @return string
+ *
+ * @throws InvalidArgumentException If the user is invalid or unknown.
  */
-function generate_jwt( ?int $expiration = null, ?WP_User $user = null ): string {
+function generate_jwt( ?int $expiration = null, WP_User|int|null $user = null ): string {
 	$payload = [
 		'iss' => get_jwt_issuer(),
 		'aud' => get_jwt_audience(),
@@ -316,6 +340,12 @@ function generate_jwt( ?int $expiration = null, ?WP_User $user = null ): string 
 	}
 
 	if ( null !== $user ) {
+		$user = $user instanceof WP_User ? $user : get_user_by( 'id', $user );
+
+		if ( ! $user instanceof WP_User ) {
+			throw new InvalidArgumentException( esc_html__( 'Invalid user.', 'rest-api-guard' ) );
+		}
+
 		$payload['sub']        = $user->ID;
 		$payload['user_login'] = $user->user_login;
 	}
