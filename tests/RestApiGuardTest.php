@@ -10,7 +10,7 @@ use const Alley\WP\REST_API_Guard\SETTINGS_KEY;
 /**
  * Visit {@see https://mantle.alley.co/testing/test-framework.html} to learn more.
  */
-class Test_REST_API_Guard extends Test_Case {
+class RestApiGuardTest extends Test_Case {
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -214,9 +214,9 @@ class Test_REST_API_Guard extends Test_Case {
 	}
 
 	/**
-	 * @dataProvider jwtDataProvider
+	 * @dataProvider jwtDataProviderAnonymous
 	 */
-	public function test_jwt_authentication( $type, $token ) {
+	public function test_jwt_authentication_anonymous( string $type, string $token ) {
 		$this->expectApplied( 'rest_api_guard_authentication_jwt' );
 
 		add_filter( 'rest_api_guard_authentication_jwt', fn () => true );
@@ -237,12 +237,47 @@ class Test_REST_API_Guard extends Test_Case {
 		} else {
 			$request->assertUnauthorized();
 		}
+
+		// Ensure they are always unauthenticated.
+		$this->get( '/wp-json/wp/v2/users/me' )->assertUnauthorized();
 	}
 
-	public static function jwtDataProvider(): array {
+	public static function jwtDataProviderAnonymous(): array {
 		return [
 			'valid' => [ 'valid', generate_jwt() ],
 			'invalid' => [ 'invalid', 'invalid' ],
+			'empty' => [ 'invalid', '' ],
+		];
+	}
+
+	/**
+	 * @dataProvider jwtDataProviderAuthenticated
+	 */
+	public function test_jwt_authentication_authenticated( string $type, string $token ) {
+		add_filter( 'rest_api_guard_authentication_jwt', fn () => true );
+		add_filter( 'rest_api_guard_user_authentication_jwt', fn () => true );
+
+		$request = $this
+			->with_header( 'Authorization', "Bearer $token" )
+			->get( '/wp-json/wp/v2/users/me' );
+
+		if ( 'valid' === $type ) {
+			$request->assertOk()->assertJsonPathExists( 'id' );
+
+			// Ensure they can access the REST API normally.
+			$this->get( '/wp-json/wp/v2/posts' )->assertOk();
+		} else {
+			$request->assertUnauthorized();
+
+			// Ensure they cannot access the REST API normally.
+			$this->get( '/wp-json/wp/v2/posts' )->assertUnauthorized();
+		}
+	}
+
+	public static function jwtDataProviderAuthenticated(): array {
+		return [
+			'valid' => [ 'valid', generate_jwt( user: static::factory()->user->create_and_get() ) ],
+			'invalid' => [ 'invalid', substr( generate_jwt(), 0, 20 ) ],
 			'empty' => [ 'invalid', '' ],
 		];
 	}

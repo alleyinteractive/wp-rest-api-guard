@@ -27,6 +27,15 @@ const SETTINGS_KEY = 'rest_api_guard';
  * Register the Admin Settings page.
  */
 function on_admin_menu() {
+	/**
+	 * Filter to disable the admin settings page.
+	 *
+	 * @param bool $disable Whether to disable the admin settings page.
+	 */
+	if ( true === apply_filters( 'rest_api_guard_disable_admin_settings', false ) ) {
+		return;
+	}
+
 	add_options_page(
 		__( 'REST API Guard', 'rest-api-guard' ),
 		__( 'REST API Guard', 'rest-api-guard' ),
@@ -175,12 +184,32 @@ function on_admin_init() {
 				'description' => __( 'Require authentication with a JSON Web Token (JWT) for all anonymous requests.', 'rest-api-guard' ),
 				'additional'  => sprintf(
 					/* translators: 1: The JWT audience. 2: The JWT issuer. */
-					__( 'When enabled, the plugin will require anonymous users to pass an "Authorization: Bearer <token>" with the token being a valid JSON Web Token (JWT). The plugin will be expecting a JWT with an audience of "%1$s", issuer of "%2$s", and secret that matches the value of the "rest_api_guard_jwt_secret" option.', 'rest-api-guard' ),
+					__( 'When enabled, the plugin will require anonymous users to pass an "Authorization: Bearer <token>" with the token being a valid JSON Web Token (JWT). The plugin will be expecting a JWT with an audience of "%1$s", issuer of "%2$s", and secret that matches the value of the "rest_api_guard_jwt_secret" option. When using the token, the user will have unrestricted read-only access to the REST API.', 'rest-api-guard' ),
 					get_jwt_audience(),
 					get_jwt_issuer(),
 				),
 				'filter'      => 'rest_api_guard_authentication_jwt',
 				'id'          => 'authentication_jwt',
+				'type'        => 'checkbox',
+			],
+		);
+
+		add_settings_field(
+			'user_authentication_jwt',
+			__( 'Allow User Authentication with JSON Web Token', 'rest-api-guard' ),
+			__NAMESPACE__ . '\render_field',
+			SETTINGS_KEY,
+			SETTINGS_KEY,
+			[
+				'description' => __( 'Allow user authentication with a JSON Web Token (JWT) for all requests.', 'rest-api-guard' ),
+				'additional'  => sprintf(
+					/* translators: 1: The JWT audience. 2: The JWT issuer. */
+					__( 'When enabled, the plugin will allow JWTs to be generated against authenticated users. They can be passed as a "Authorization: Bearer <token>" with the token being a valid JSON Web Token (JWT). The plugin will be expecting a JWT with an audience of "%1$s", issuer of "%2$s", and secret that matches the value of the "rest_api_guard_jwt_secret" option. When using the token, the user will have unrestricted access to the REST API mirroring whatever permissions the user associated with the token would have.', 'rest-api-guard' ),
+					get_jwt_audience(),
+					get_jwt_issuer(),
+				),
+				'filter'      => 'rest_api_guard_user_authentication_jwt',
+				'id'          => 'user_authentication_jwt',
 				'type'        => 'checkbox',
 			],
 		);
@@ -205,6 +234,8 @@ function sanitize_settings( $input ) {
 		'allow_user_access'            => ! empty( $input['allow_user_access'] ),
 		'anonymous_requests_allowlist' => ! empty( $input['anonymous_requests_allowlist'] ) ? sanitize_textarea_field( $input['anonymous_requests_allowlist'] ) : '',
 		'anonymous_requests_denylist'  => ! empty( $input['anonymous_requests_denylist'] ) ? sanitize_textarea_field( $input['anonymous_requests_denylist'] ) : '',
+		'authentication_jwt'           => ! empty( $input['authentication_jwt'] ),
+		'user_authentication_jwt'      => ! empty( $input['user_authentication_jwt'] ),
 	];
 }
 
