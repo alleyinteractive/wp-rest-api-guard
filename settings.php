@@ -184,7 +184,7 @@ function on_admin_init() {
 				'description' => __( 'Require authentication with a JSON Web Token (JWT) for all anonymous requests.', 'rest-api-guard' ),
 				'additional'  => sprintf(
 					/* translators: 1: The JWT audience. 2: The JWT issuer. */
-					__( 'When enabled, the plugin will require anonymous users to pass an "Authorization: Bearer <token>" with the token being a valid JSON Web Token (JWT). The plugin will be expecting a JWT with an audience of "%1$s", issuer of "%2$s", and secret that matches the value of the "rest_api_guard_jwt_secret" option.', 'rest-api-guard' ),
+					__( 'When enabled, the plugin will require anonymous users to pass an "Authorization: Bearer <token>" with the token being a valid JSON Web Token (JWT). The plugin will be expecting a JWT with an audience of "%1$s", issuer of "%2$s", and secret that matches the value of the "rest_api_guard_jwt_secret" option. When using the token, the user will have unrestricted read-only access to the REST API.', 'rest-api-guard' ),
 					get_jwt_audience(),
 					get_jwt_issuer(),
 				),
@@ -204,7 +204,7 @@ function on_admin_init() {
 				'description' => __( 'Allow user authentication with a JSON Web Token (JWT) for all requests.', 'rest-api-guard' ),
 				'additional'  => sprintf(
 					/* translators: 1: The JWT audience. 2: The JWT issuer. */
-					__( 'When enabled, the plugin will allow JWTs to be generated against authenticated users. They can be passed as a "Authorization: Bearer <token>" with the token being a valid JSON Web Token (JWT). The plugin will be expecting a JWT with an audience of "%1$s", issuer of "%2$s", and secret that matches the value of the "rest_api_guard_jwt_secret" option.', 'rest-api-guard' ),
+					__( 'When enabled, the plugin will allow JWTs to be generated against authenticated users. They can be passed as a "Authorization: Bearer <token>" with the token being a valid JSON Web Token (JWT). The plugin will be expecting a JWT with an audience of "%1$s", issuer of "%2$s", and secret that matches the value of the "rest_api_guard_jwt_secret" option. When using the token, the user will have unrestricted access to the REST API mirroring whatever permissions the user associated with the token would have.', 'rest-api-guard' ),
 					get_jwt_audience(),
 					get_jwt_issuer(),
 				),
