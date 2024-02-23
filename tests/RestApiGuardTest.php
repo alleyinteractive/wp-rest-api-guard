@@ -10,7 +10,7 @@ use const Alley\WP\REST_API_Guard\SETTINGS_KEY;
 /**
  * Visit {@see https://mantle.alley.co/testing/test-framework.html} to learn more.
  */
-class Test_REST_API_Guard extends Test_Case {
+class RestApiGuardTest extends Test_Case {
 	protected function setUp(): void {
 		parent::setUp();
 
