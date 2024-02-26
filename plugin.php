@@ -354,9 +354,10 @@ function generate_jwt( ?int $expiration = null, WP_User|int|null $user = null ):
 		 * The filer cannot modify any existing claims, only add new ones.
 		 *
 		 * @param array<string, mixed> $additional_claims The additional claims to include in the JWT.
-		 * @param WP_User              $user The user to include in the JWT.
+		 * @param WP_User|null         $user The user to include in the JWT.
+		 * @param array<string, mixed> $payload The payload of the JWT.
 		 */
-		$additional_claims = apply_filters( 'rest_api_guard_jwt_additional_claims', [], $user );
+		$additional_claims = apply_filters( 'rest_api_guard_jwt_additional_claims', [], $user, $payload );
 
 		if ( is_array( $additional_claims ) ) {
 			$payload = array_merge( $additional_claims, $payload );
