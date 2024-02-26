@@ -2,8 +2,10 @@
 namespace Alley\WP\REST_API_Guard\Tests;
 
 use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
 use function Alley\WP\REST_API_Guard\generate_jwt;
+use function Alley\WP\REST_API_Guard\get_jwt_secret;
 
 use const Alley\WP\REST_API_Guard\SETTINGS_KEY;
 
@@ -280,5 +282,36 @@ class RestApiGuardTest extends Test_Case {
 			'invalid' => [ 'invalid', substr( generate_jwt(), 0, 20 ) ],
 			'empty' => [ 'invalid', '' ],
 		];
+	}
+
+	public function test_additional_jwt_claims() {
+		add_filter(
+			'rest_api_guard_jwt_additional_claims',
+			function ( $claims, $user ) {
+				$claims['user_email'] = $user->user_email;
+				$claims['sub']        = 1234;
+
+				return $claims;
+			},
+			10,
+			2,
+		);
+
+		add_filter( 'rest_api_guard_user_authentication_jwt', fn () => true );
+
+		$user = static::factory()->user->create_and_get();
+
+		$token = generate_jwt( user: $user );
+
+		$this
+			->with_header( 'Authorization', "Bearer {$token}" )
+			->get( '/wp-json/wp/v2/users/me' )
+			->assertOk();
+
+		// Ensure the additional claim is present.
+		$decoded = JWT::decode( $token, new Key( get_jwt_secret(), 'HS256' ) );
+
+		$this->assertEquals( $user->user_email, $decoded->user_email );
+		$this->assertEquals( $user->ID, $decoded->sub ); // Ensure it cannot overwrite a claim.
 	}
 }
