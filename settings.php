@@ -146,6 +146,21 @@ function on_admin_init() {
 	);
 
 	add_settings_field(
+		'check_options_requests',
+		__( 'Apply checks to OPTIONS requests', 'rest-api-guard' ),
+		__NAMESPACE__ . '\render_field',
+		SETTINGS_KEY,
+		SETTINGS_KEY,
+		[
+			'description' => __( 'Apply the same checks to OPTIONS requests as other requests.', 'rest-api-guard' ),
+			'additional'  => __( 'By default, the plugin will not apply any checks to OPTIONS requests. This setting will force the plugin to apply the same checks to OPTIONS requests as other requests. For CORS requests, this may need to be disabled to allow authentication with a JWT.', 'rest-api-guard' ),
+			'filter'      => 'rest_api_guard_check_options_requests',
+			'id'          => 'check_options_requests',
+			'type'        => 'checkbox',
+		],
+	);
+
+	add_settings_field(
 		'anonymous_requests_allowlist',
 		__( 'Anonymous Request Allowlist', 'rest-api-guard' ),
 		__NAMESPACE__ . '\render_field',
@@ -232,6 +247,7 @@ function sanitize_settings( $input ) {
 		'allow_index_access'           => ! empty( $input['allow_index_access'] ),
 		'allow_namespace_access'       => ! empty( $input['allow_namespace_access'] ),
 		'allow_user_access'            => ! empty( $input['allow_user_access'] ),
+		'check_options_requests'       => ! empty( $input['check_options_requests'] ),
 		'anonymous_requests_allowlist' => ! empty( $input['anonymous_requests_allowlist'] ) ? sanitize_textarea_field( $input['anonymous_requests_allowlist'] ) : '',
 		'anonymous_requests_denylist'  => ! empty( $input['anonymous_requests_denylist'] ) ? sanitize_textarea_field( $input['anonymous_requests_denylist'] ) : '',
 		'authentication_jwt'           => ! empty( $input['authentication_jwt'] ),

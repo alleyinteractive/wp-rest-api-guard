@@ -121,6 +121,42 @@ class RestApiGuardTest extends Test_Case {
 		$this->get( rest_url( '/wp/v2/tags' ) )->assertUnauthorized();
 	}
 
+	public function test_check_options_requests() {
+		$this->expectApplied( 'rest_api_guard_check_options_requests' )->times( 3 );
+
+		// Check the default settings.
+		update_option(
+			SETTINGS_KEY,
+			[
+				'prevent_anonymous_access' => true,
+			]
+		);
+
+		$this->options( rest_url( '/wp/v2/categories' ) )->assertOk();
+		$this->get( rest_url( '/wp/v2/categories' ) )->assertUnauthorized();
+
+		update_option(
+			SETTINGS_KEY,
+			[
+				'prevent_anonymous_access' => true,
+				'check_options_requests'   => true,
+			]
+		);
+
+		$this->options( rest_url( '/wp/v2/categories' ) )->assertUnauthorized();
+
+		update_option(
+			SETTINGS_KEY,
+			[
+				'prevent_anonymous_access' => true,
+			]
+		);
+
+		add_filter( 'rest_api_guard_check_options_requests', fn () => true );
+
+		$this->options( rest_url( '/wp/v2/categories' ) )->assertUnauthorized();
+	}
+
 	public function test_prevent_access_allowlist_code() {
 		$this->get( rest_url( '/wp/v2/categories' ) )->assertOk();
 
