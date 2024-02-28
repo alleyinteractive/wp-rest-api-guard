@@ -64,7 +64,7 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 	 *
 	 * This is useful for CORS preflight requests.
 	 *
-	 * @param bool             $allow Whether to allow OPTIONS requests, default true.
+	 * @param bool             $check Whether to check OPTIONS requests. Default false.
 	 * @param \WP_REST_Request $request REST API Request.
 	 */
 	if ( 'OPTIONS' === $request->get_method() && ! apply_filters( 'rest_api_guard_check_options_requests', $settings['check_options_requests'] ?? false, $request ) ) {
