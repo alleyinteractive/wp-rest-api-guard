@@ -161,7 +161,7 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 	/**
 	 * Prevent access to the root of the REST API.
 	 *
-	 * @param bool   $prevent Whether to prevent anonymous access, default false.
+	 * @param bool   $prevent Whether to allow anonymous access to the REST API index. Default false.
 	 * @param string $endpoint The endpoint of the request.
 	 */
 	if ( '/' === $endpoint && false === apply_filters( 'rest_api_guard_allow_index_access', $settings['allow_index_access'] ?? false, $endpoint ) ) {
