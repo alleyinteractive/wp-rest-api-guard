@@ -60,7 +60,7 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 	}
 
 	/**
-	 * Allow OPTIONS requests to bypass the REST API Guard checks by default.
+	 * Filters whether the REST API Guard should check OPTIONS requests.
 	 *
 	 * This is useful for CORS preflight requests.
 	 *
