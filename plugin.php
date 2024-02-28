@@ -3,9 +3,9 @@
  * Plugin Name: REST API Guard
  * Plugin URI: https://github.com/alleyinteractive/wp-rest-api-guard
  * Description: Restrict and control access to the REST API
- * Version: 1.2.0
+ * Version: 1.3.0
  * Author: Sean Fisher
- * Author URI: https://alley.co/
+ * Author URI: https://alley.com/
  * Requires at least: 6.0
  * Tested up to: 6.3
  *
@@ -57,6 +57,18 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 
 	if ( ! is_array( $settings ) ) {
 		$settings = [];
+	}
+
+	/**
+	 * Filters whether the REST API Guard should check OPTIONS requests.
+	 *
+	 * This is useful for CORS preflight requests.
+	 *
+	 * @param bool             $check Whether to check OPTIONS requests. Default false.
+	 * @param \WP_REST_Request $request REST API Request.
+	 */
+	if ( 'OPTIONS' === $request->get_method() && ! apply_filters( 'rest_api_guard_check_options_requests', $settings['check_options_requests'] ?? false, $request ) ) {
+		return false;
 	}
 
 	if ( class_exists( JWT::class ) ) {
@@ -149,9 +161,10 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 	/**
 	 * Prevent access to the root of the REST API.
 	 *
-	 * @param bool $prevent Whether to prevent anonymous access, default false.
+	 * @param bool   $prevent Whether to allow anonymous access to the REST API index. Default false.
+	 * @param string $endpoint The endpoint of the request.
 	 */
-	if ( '/' === $endpoint && false === apply_filters( 'rest_api_guard_allow_index_access', $settings['allow_index_access'] ?? false ) ) {
+	if ( '/' === $endpoint && false === apply_filters( 'rest_api_guard_allow_index_access', $settings['allow_index_access'] ?? false, $endpoint ) ) {
 		return true;
 	}
 
@@ -171,9 +184,10 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 	/**
 	 * Prevent access to the /wp/v2/users endpoints by default.
 	 *
-	 * @param bool $pre Whether to prevent access to the /wp/v2/users endpoints.
+	 * @param bool   $pre Whether to allow access to the /wp/v2/users endpoints.
+	 * @param string $endpoint The endpoint of the request.
 	 */
-	if ( preg_match( '#^/wp/v\d+/users($|/)#', $endpoint ) && false === apply_filters( 'rest_api_guard_allow_user_access', $settings['allow_user_access'] ?? false ) ) {
+	if ( preg_match( '#^/wp/v\d+/users($|/)#', $endpoint ) && false === apply_filters( 'rest_api_guard_allow_user_access', $settings['allow_user_access'] ?? false, $endpoint ) ) {
 		return true;
 	}
 
