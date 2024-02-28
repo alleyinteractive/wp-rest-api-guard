@@ -4,7 +4,7 @@ All notable changes to `wp-rest-guard` will be documented in this file.
 
 ## v1.3.0 - 2024-02-27
 
-- Allow the claims to be added to added to a generated JWT via filter.
+- Allow the claims to be added to a generated JWT via filter.
 - Don't check `OPTIONS` requests by default.
 
 ## v1.2.0 - 2024-02-22
