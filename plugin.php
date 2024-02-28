@@ -184,7 +184,7 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 	/**
 	 * Prevent access to the /wp/v2/users endpoints by default.
 	 *
-	 * @param bool   $pre Whether to prevent access to the /wp/v2/users endpoints.
+	 * @param bool   $pre Whether to allow access to the /wp/v2/users endpoints.
 	 * @param string $endpoint The endpoint of the request.
 	 */
 	if ( preg_match( '#^/wp/v\d+/users($|/)#', $endpoint ) && false === apply_filters( 'rest_api_guard_allow_user_access', $settings['allow_user_access'] ?? false, $endpoint ) ) {
