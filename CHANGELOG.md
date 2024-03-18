@@ -2,6 +2,10 @@
 
 All notable changes to `wp-rest-guard` will be documented in this file.
 
+## v1.3.1 - 2024-03-18
+
+- Ignore JWT authentication for the REST API if the user is already authenticated.
+
 ## v1.3.0 - 2024-02-27
 
 - Allow the claims to be added to a generated JWT via filter.
