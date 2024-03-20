@@ -71,7 +71,7 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 		return false;
 	}
 
-	if ( class_exists( JWT::class ) ) {
+	if ( class_exists( JWT::class ) && ! is_user_logged_in() ) {
 		/**
 		 * Check if the anonymous request requires a JSON Web Token (JWT).
 		 *

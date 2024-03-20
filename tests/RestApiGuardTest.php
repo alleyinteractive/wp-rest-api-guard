@@ -122,7 +122,8 @@ class RestApiGuardTest extends Test_Case {
 	}
 
 	public function test_check_options_requests() {
-		$this->expectApplied( 'rest_api_guard_check_options_requests' )->times( 3 );
+		$this->assertNotAuthenticated();
+		$this->expectApplied( 'rest_api_guard_check_options_requests' )->times( 8 );
 
 		// Check the default settings.
 		update_option(
