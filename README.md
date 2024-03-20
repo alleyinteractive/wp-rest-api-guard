@@ -1,6 +1,6 @@
 # REST API Guard
 
-Stable tag: 1.3.0
+Stable tag: 1.3.2
 
 Requires at least: 6.0
 
