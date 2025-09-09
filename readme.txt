@@ -1,8 +1,8 @@
 === REST API Guard ===
-Stable tag: 1.3.2
+Stable tag: 1.4.0
 Requires at least: 6.0
-Tested up to: 6.3
-Requires PHP: 8.0
+Tested up to: 6.8
+Requires PHP: 8.1
 License: GPL v2 or later
 Tags: alleyinteractive, rest-api-guard
 Contributors: sean212
