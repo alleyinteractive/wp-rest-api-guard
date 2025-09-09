@@ -1,5 +1,5 @@
 === REST API Guard ===
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 Requires at least: 6.5
 Tested up to: 6.8
 Requires PHP: 8.1
