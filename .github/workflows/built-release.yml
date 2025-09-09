@@ -16,3 +16,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: alleyinteractive/action-release@develop
+        with:
+          github-token: ${{ secrets.GH_TOKEN }}
