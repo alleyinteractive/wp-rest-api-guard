@@ -6,7 +6,7 @@
  * Version: 1.4.0
  * Author: Sean Fisher
  * Author URI: https://alley.com/
- * Requires at least: 6.0
+ * Requires at least: 6.5
  * Tested up to: 6.8
  *
  * @package rest-api-guard
