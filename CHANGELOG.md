@@ -2,6 +2,15 @@
 
 All notable changes to `wp-rest-guard` will be documented in this file.
 
+## v1.4.1
+
+- No changes, release to trigger deployment to WordPress.org.
+
+## v1.4.0
+
+- Add support for WordPress 6.8.
+- Require PHP 8.1+.
+
 ## v1.3.1 - 2024-03-18
 
 - Ignore JWT authentication for the REST API if the user is already authenticated.
