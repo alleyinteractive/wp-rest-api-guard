@@ -3,6 +3,7 @@ namespace Alley\WP\REST_API_Guard\Tests;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use Mantle\Testkit\Test_Case;
 
 use function Alley\WP\REST_API_Guard\generate_jwt;
 use function Alley\WP\REST_API_Guard\get_jwt_secret;

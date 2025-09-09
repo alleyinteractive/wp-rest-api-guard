@@ -1,10 +1,10 @@
 # REST API Guard
 
-Stable tag: 1.3.2
+Stable tag: 1.4.0
 
-Requires at least: 6.0
+Requires at least: 6.5
 
-Tested up to: 6.0
+Tested up to: 6.8
 
 Requires PHP: 8.0
 
@@ -14,8 +14,7 @@ Tags: alleyinteractive, rest-api-guard
 
 Contributors: sean212
 
-[![Coding Standards](https://github.com/alleyinteractive/wp-rest-api-guard/actions/workflows/coding-standards.yml/badge.svg)](https://github.com/alleyinteractive/wp-rest-api-guard/actions/workflows/coding-standards.yml)
-[![Testing Suite](https://github.com/alleyinteractive/wp-rest-api-guard/actions/workflows/unit-test.yml/badge.svg)](https://github.com/alleyinteractive/wp-rest-api-guard/actions/workflows/unit-test.yml)
+[![All Pull Request Tests](https://github.com/alleyinteractive/wp-rest-api-guard/actions/workflows/all-pr-tests.yml/badge.svg?branch=develop)](https://github.com/alleyinteractive/wp-rest-api-guard/actions/workflows/all-pr-tests.yml)
 
 Restrict and control access to the REST API.
 

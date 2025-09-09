@@ -17,12 +17,11 @@
         }
     ],
     "require": {
-        "php": "^8.0",
+        "php": "^8.1",
         "firebase/php-jwt": "^6.10"
     },
     "require-dev": {
         "alleyinteractive/alley-coding-standards": "^2.0",
-        "alleyinteractive/composer-wordpress-autoloader": "^1.0",
         "mantle-framework/testkit": "^1.0"
     },
     "config": {
@@ -31,14 +30,10 @@
             "dealerdirect/phpcodesniffer-composer-installer": true,
             "pestphp/pest-plugin": true
         },
+        "platform": {
+            "php": "8.1"
+        },
         "sort-packages": true
-    },
-    "extra": {
-        "wordpress-autoloader": {
-            "autoload-dev": {
-                "Alley\\WP\\REST_API_Guard\\Tests\\": "tests"
-            }
-        }
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
