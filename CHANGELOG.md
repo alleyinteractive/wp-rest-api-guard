@@ -7,6 +7,7 @@ All notable changes to `wp-rest-guard` will be documented in this file.
 - Prevent mixed-case REST API routes from bypassing anonymous access restrictions.
 - Add support for WordPress 7.1.
 - Require PHP 8.3+.
+- Update `firebase/php-jwt` to version 7.
 
 ## v1.4.1
 
