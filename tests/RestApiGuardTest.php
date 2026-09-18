@@ -4,6 +4,7 @@ namespace Alley\WP\REST_API_Guard\Tests;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Mantle\Testkit\Test_Case;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 use function Alley\WP\REST_API_Guard\generate_jwt;
 use function Alley\WP\REST_API_Guard\get_jwt_secret;
@@ -27,7 +28,9 @@ class RestApiGuardTest extends Test_Case {
 
 		// By default users, index, or namespaces are not allowed.
 		$this->get( rest_url( '/wp/v2/users' ) )->assertUnauthorized();
+		$this->get( rest_url( '/wp/v2/Users' ) )->assertUnauthorized();
 		$this->get( rest_url( '/' ) )->assertUnauthorized();
+		$this->get( rest_url( '/WP/v2' ) )->assertUnauthorized();
 
 		$this->acting_as( 'administrator' );
 
@@ -193,7 +196,9 @@ class RestApiGuardTest extends Test_Case {
 		$this->get( rest_url( '/wp/v2/categories' ) )->assertUnauthorized();
 		$this->get( rest_url( '/wp/v2/posts' ) )->assertUnauthorized();
 		$this->get( rest_url( '/wp/v2/posts/' . $post_id ) )->assertOk();
+		$this->get( rest_url( '/wp/v2/POSTS/' . $post_id ) )->assertOk();
 		$this->get( rest_url( '/wp/v2/tags' ) )->assertOk();
+		$this->get( rest_url( '/wp/v2/TAGS' ) )->assertOk();
 	}
 
 	public function test_prevent_access_denylist_code() {
@@ -228,7 +233,9 @@ class RestApiGuardTest extends Test_Case {
 		$this->get( rest_url( '/wp/v2/posts' ) )->assertOk();
 		$this->get( rest_url( '/wp/v2/posts/' . static::factory()->post->create() ) )->assertOk();
 		$this->get( rest_url( '/wp/v2/tags' ) )->assertUnauthorized();
+		$this->get( rest_url( '/wp/v2/TAGS' ) )->assertUnauthorized();
 		$this->get( rest_url( '/wp/v2/types' ) )->assertUnauthorized();
+		$this->get( rest_url( '/wp/v2/TYPES' ) )->assertUnauthorized();
 	}
 
 	public function test_prevent_access_denylist_priority() {
@@ -253,9 +260,7 @@ class RestApiGuardTest extends Test_Case {
 		$this->get( rest_url( '/wp/v2/categories' ) )->assertUnauthorized();
 	}
 
-	/**
-	 * @dataProvider jwtDataProviderAnonymous
-	 */
+	#[DataProvider( 'jwtDataProviderAnonymous' )]
 	public function test_jwt_authentication_anonymous( string $type, string $token ) {
 		$this->expectApplied( 'rest_api_guard_authentication_jwt' );
 
@@ -290,12 +295,14 @@ class RestApiGuardTest extends Test_Case {
 		];
 	}
 
-	/**
-	 * @dataProvider jwtDataProviderAuthenticated
-	 */
-	public function test_jwt_authentication_authenticated( string $type, string $token ) {
+	#[DataProvider( 'jwtDataProviderAuthenticated' )]
+	public function test_jwt_authentication_authenticated( string $type, ?string $token ) {
 		add_filter( 'rest_api_guard_authentication_jwt', fn () => true );
 		add_filter( 'rest_api_guard_user_authentication_jwt', fn () => true );
+
+		if ( null === $token ) {
+			$token = generate_jwt( user: static::factory()->user->create_and_get() );
+		}
 
 		$request = $this
 			->with_header( 'Authorization', "Bearer $token" )
@@ -316,7 +323,7 @@ class RestApiGuardTest extends Test_Case {
 
 	public static function jwtDataProviderAuthenticated(): array {
 		return [
-			'valid' => [ 'valid', generate_jwt( user: static::factory()->user->create_and_get() ) ],
+			'valid' => [ 'valid', null ],
 			'invalid' => [ 'invalid', substr( generate_jwt(), 0, 20 ) ],
 			'empty' => [ 'invalid', '' ],
 		];

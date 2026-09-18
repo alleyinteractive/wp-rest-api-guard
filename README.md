@@ -1,12 +1,12 @@
 # REST API Guard
 
-Stable tag: 1.4.1
+Stable tag: 1.4.2
 
 Requires at least: 6.5
 
-Tested up to: 6.8
+Tested up to: 7.1
 
-Requires PHP: 8.0
+Requires PHP: 8.3
 
 License: GPL v2 or later
 
