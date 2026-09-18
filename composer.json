@@ -17,7 +17,7 @@
         }
     ],
     "require": {
-        "php": "^8.1",
+        "php": "^8.3",
         "firebase/php-jwt": "^6.10"
     },
     "require-dev": {
@@ -31,7 +31,7 @@
             "pestphp/pest-plugin": true
         },
         "platform": {
-            "php": "8.1"
+            "php": "8.3"
         },
         "sort-packages": true
     },

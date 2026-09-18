@@ -2,6 +2,12 @@
 
 All notable changes to `wp-rest-guard` will be documented in this file.
 
+## v1.4.2 - 2026-09-18
+
+- Prevent mixed-case REST API routes from bypassing anonymous access restrictions.
+- Add support for WordPress 7.1.
+- Require PHP 8.3+.
+
 ## v1.4.1
 
 - No changes, release to trigger deployment to WordPress.org.

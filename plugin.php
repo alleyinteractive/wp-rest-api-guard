@@ -3,11 +3,12 @@
  * Plugin Name: REST API Guard
  * Plugin URI: https://github.com/alleyinteractive/wp-rest-api-guard
  * Description: Restrict and control access to the REST API
- * Version: 1.4.1
+ * Version: 1.4.2
  * Author: Sean Fisher
  * Author URI: https://alley.com/
  * Requires at least: 6.5
- * Tested up to: 6.8
+ * Requires PHP: 8.3
+ * Tested up to: 7.1
  *
  * @package rest-api-guard
  */
@@ -153,7 +154,8 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 		return true;
 	}
 
-	$endpoint = $request->get_route();
+	$endpoint            = $request->get_route();
+	$normalized_endpoint = strtolower( $endpoint );
 
 	/**
 	 * Prevent access to the root of the REST API.
@@ -166,7 +168,7 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 	}
 
 	if (
-		in_array( substr( $endpoint, 1 ), $server->get_namespaces(), true )
+		in_array( substr( $normalized_endpoint, 1 ), array_map( 'strtolower', $server->get_namespaces() ), true )
 		/**
 		 * Prevent access to the namespace index of the REST API.
 		 *
@@ -184,7 +186,7 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 	 * @param bool   $pre Whether to allow access to the /wp/v2/users endpoints.
 	 * @param string $endpoint The endpoint of the request.
 	 */
-	if ( preg_match( '#^/wp/v\d+/users($|/)#', $endpoint ) && false === apply_filters( 'rest_api_guard_allow_user_access', $settings['allow_user_access'] ?? false, $endpoint ) ) {
+	if ( preg_match( '#^/wp/v\d+/users($|/)#', $normalized_endpoint ) && false === apply_filters( 'rest_api_guard_allow_user_access', $settings['allow_user_access'] ?? false, $endpoint ) ) {
 		return true;
 	}
 
@@ -202,12 +204,14 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 		}
 
 		foreach ( $allowlist as $allowlist_endpoint ) {
+			$allowlist_endpoint = strtolower( trim( $allowlist_endpoint ) );
+
 			// Strip off /wp-json from the beginning of the endpoint if it was included.
 			if ( 0 === strpos( $allowlist_endpoint, '/wp-json' ) ) {
 				$allowlist_endpoint = substr( $allowlist_endpoint, 8 );
 			}
 
-			if ( preg_match( '/' . str_replace( '\*', '.*', preg_quote( $allowlist_endpoint, '/' ) ) . '/', $endpoint ) ) {
+			if ( preg_match( '/' . str_replace( '\*', '.*', preg_quote( $allowlist_endpoint, '/' ) ) . '/', $normalized_endpoint ) ) {
 				return false;
 			}
 		}
@@ -230,12 +234,14 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 		}
 
 		foreach ( $denylist as $denylist_endpoint ) {
+			$denylist_endpoint = strtolower( trim( $denylist_endpoint ) );
+
 			// Strip off /wp-json from the beginning of the endpoint if it was included.
 			if ( 0 === strpos( $denylist_endpoint, '/wp-json' ) ) {
 				$denylist_endpoint = substr( $denylist_endpoint, 8 );
 			}
 
-			if ( preg_match( '/' . str_replace( '\*', '.*', preg_quote( $denylist_endpoint, '/' ) ) . '/', $endpoint ) ) {
+			if ( preg_match( '/' . str_replace( '\*', '.*', preg_quote( $denylist_endpoint, '/' ) ) . '/', $normalized_endpoint ) ) {
 				return true;
 			}
 		}
