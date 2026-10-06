@@ -36,6 +36,8 @@ Every option is available on the settings page (**Settings → REST API Guard**)
 
 ![The REST API Guard settings page](.wordpress-org/screenshot-1.png)
 
+![The Tokens tab](.wordpress-org/screenshot-2.png)
+
 To configure the plugin entirely in code and hide the settings page:
 
 ```php
@@ -138,9 +140,9 @@ Additional claims can be added to user tokens with the `rest_api_guard_jwt_addit
 
 ### Generate, list, and revoke tokens
 
-Tokens can be generated from the **Tokens** section of the settings page. Give each one a name so you can tell them apart later, and optionally tie it to a user or set an expiration. The token is shown once after it's generated, so copy it somewhere safe.
+Once JWT authentication is enabled, tokens can be generated from the **Tokens** tab of the settings page. Give each one a name so you can tell them apart later, and optionally tie it to a user or set an expiration. The token is shown once after it's generated, so copy it somewhere safe.
 
-The same section lists every token the plugin has issued, and any of them can be revoked. A revoked token stops working right away.
+The same tab lists every token the plugin has issued, and any of them can be revoked. A revoked token stops working right away.
 
 Tokens can also be managed with WP-CLI:
 

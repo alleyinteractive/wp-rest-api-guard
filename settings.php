@@ -8,6 +8,7 @@
 namespace Alley\WP\REST_API_Guard;
 
 use Firebase\JWT\JWT;
+use WP_REST_Request;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -51,29 +52,85 @@ function on_admin_menu() {
  * Render the admin settings.
  */
 function render_admin_page() {
+	$tabs = [
+		'settings' => __( 'Settings', 'rest-api-guard' ),
+	];
+
+	if ( is_jwt_authentication_enabled() ) {
+		$tabs['tokens'] = __( 'Tokens', 'rest-api-guard' );
+	}
+
+	$current_tab = sanitize_key( $_GET['tab'] ?? '' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+	if ( ! isset( $tabs[ $current_tab ] ) ) {
+		$current_tab = 'settings';
+	}
 	?>
 	<div class="wrap">
 		<h2>
 			<?php esc_html_e( 'REST API Guard', 'rest-api-guard' ); ?>
 		</h2>
 
-		<?php settings_errors(); ?>
+		<?php if ( count( $tabs ) > 1 ) : ?>
+			<nav class="nav-tab-wrapper">
+				<?php foreach ( $tabs as $tab => $label ) : ?>
+					<a
+						href="<?php echo esc_url( get_admin_page_url( 'settings' === $tab ? [] : [ 'tab' => $tab ] ) ); ?>"
+						class="nav-tab <?php echo $tab === $current_tab ? 'nav-tab-active' : ''; ?>"
+						<?php echo $tab === $current_tab ? 'aria-current="page"' : ''; ?>
+					>
+						<?php echo esc_html( $label ); ?>
+					</a>
+				<?php endforeach; ?>
+			</nav>
+		<?php endif; ?>
 
-		<form method="post" action="options.php">
-			<?php
-				settings_fields( SETTINGS_KEY );
-				do_settings_sections( SETTINGS_KEY );
-				submit_button();
-			?>
-		</form>
+		<?php if ( 'tokens' === $current_tab ) : ?>
+			<?php render_tokens_section(); ?>
+		<?php else : ?>
+			<?php settings_errors(); ?>
 
-		<?php
-		if ( class_exists( JWT::class ) ) {
-			render_tokens_section();
-		}
-		?>
+			<form method="post" action="options.php">
+				<?php
+					settings_fields( SETTINGS_KEY );
+					do_settings_sections( SETTINGS_KEY );
+					submit_button();
+				?>
+			</form>
+		<?php endif; ?>
 	</div>
 	<?php
+}
+
+/**
+ * Check if anonymous or user JWT authentication is enabled.
+ *
+ * @return bool
+ */
+function is_jwt_authentication_enabled(): bool {
+	if ( ! class_exists( JWT::class ) ) {
+		return false;
+	}
+
+	$settings = (array) get_option( SETTINGS_KEY );
+	$request  = new WP_REST_Request();
+
+	/* Documented in plugin.php. */
+	return true === apply_filters( 'rest_api_guard_authentication_jwt', $settings['authentication_jwt'] ?? false, $request )
+		|| true === apply_filters( 'rest_api_guard_user_authentication_jwt', $settings['user_authentication_jwt'] ?? false, $request );
+}
+
+/**
+ * Get the URL of the settings page.
+ *
+ * @param array<string, string> $args Query arguments to add.
+ * @return string
+ */
+function get_admin_page_url( array $args = [] ): string {
+	return add_query_arg(
+		array_merge( [ 'page' => SETTINGS_KEY ], $args ),
+		admin_url( 'options-general.php' ),
+	);
 }
 
 /**
@@ -85,8 +142,6 @@ function render_tokens_section() {
 
 	uasort( $tokens, fn ( $a, $b ) => $b['issued_at'] <=> $a['issued_at'] );
 	?>
-	<hr />
-	<h2><?php esc_html_e( 'Tokens', 'rest-api-guard' ); ?></h2>
 	<p><?php esc_html_e( 'JSON Web Tokens (JWTs) issued by the plugin. Revoking a token prevents it from being used again.', 'rest-api-guard' ); ?></p>
 
 	<?php
@@ -250,12 +305,11 @@ function handle_revoke_jwt() {
  */
 function redirect_to_admin_page( string $notice ): never {
 	wp_safe_redirect(
-		add_query_arg(
+		get_admin_page_url(
 			[
-				'page'                  => SETTINGS_KEY,
+				'tab'                   => 'tokens',
 				'rest_api_guard_notice' => $notice,
 			],
-			admin_url( 'options-general.php' ),
 		),
 	);
 	exit;

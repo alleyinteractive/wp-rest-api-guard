@@ -15,6 +15,7 @@ use function Alley\WP\REST_API_Guard\get_token;
 use function Alley\WP\REST_API_Guard\get_tokens;
 use function Alley\WP\REST_API_Guard\handle_generate_jwt;
 use function Alley\WP\REST_API_Guard\handle_revoke_jwt;
+use function Alley\WP\REST_API_Guard\is_jwt_authentication_enabled;
 use function Alley\WP\REST_API_Guard\revoke_token;
 
 use const Alley\WP\REST_API_Guard\SETTINGS_KEY;
@@ -491,5 +492,18 @@ class RestApiGuardTest extends Test_Case {
 		} catch ( WP_Die_Exception ) {
 			$this->assertEmpty( get_tokens() );
 		}
+	}
+
+	public function test_jwt_authentication_enabled() {
+		$this->assertFalse( is_jwt_authentication_enabled() );
+
+		update_option( SETTINGS_KEY, [ 'user_authentication_jwt' => true ] );
+
+		$this->assertTrue( is_jwt_authentication_enabled() );
+
+		delete_option( SETTINGS_KEY );
+		add_filter( 'rest_api_guard_authentication_jwt', '__return_true' );
+
+		$this->assertTrue( is_jwt_authentication_enabled() );
 	}
 }

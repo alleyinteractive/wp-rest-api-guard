@@ -93,9 +93,9 @@ Tokens can also be tied to a user. A request with a user token is treated as tha
 
 = Generate, list, and revoke tokens =
 
-Tokens can be generated from the Tokens section of the settings page. Give each one a name so you can tell them apart later, and optionally tie it to a user or set an expiration. The token is shown once after it's generated, so copy it somewhere safe.
+Once JWT authentication is enabled, tokens can be generated from the Tokens tab of the settings page. Give each one a name so you can tell them apart later, and optionally tie it to a user or set an expiration. The token is shown once after it's generated, so copy it somewhere safe.
 
-The same section lists every token the plugin has issued, and any of them can be revoked. A revoked token stops working right away.
+The same tab lists every token the plugin has issued, and any of them can be revoked. A revoked token stops working right away.
 
 Tokens can also be managed with WP-CLI:
 
@@ -155,14 +155,15 @@ Not by default, since browsers send them as CORS preflight requests without cred
 
 == Screenshots ==
 
-1. The settings page, including the Tokens section for generating and revoking JSON Web Tokens.
+1. The settings page.
+2. The Tokens tab for generating, listing, and revoking JSON Web Tokens.
 
 == Changelog ==
 
 = 1.5.0 =
 
 * Track issued JWTs and allow them to be revoked from the settings page or WP-CLI.
-* Add a Tokens section to the settings page to generate, list, and revoke JWTs.
+* Add a Tokens tab to the settings page to generate, list, and revoke JWTs when JWT authentication is enabled.
 * Add the `rest_api_guard_allow_untracked_jwt` filter to reject JWTs issued before tracking.
 * Send no-cache headers on REST API requests that include an `Authorization` header.
 
