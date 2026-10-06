@@ -506,4 +506,31 @@ class RestApiGuardTest extends Test_Case {
 
 		$this->assertTrue( is_jwt_authentication_enabled() );
 	}
+
+	public function test_admin_generate_jwt_for_user_login() {
+		$this->acting_as( 'administrator' );
+
+		$user = static::factory()->user->create_and_get( [ 'user_login' => '12345' ] );
+
+		add_filter(
+			'wp_redirect',
+			function ( $location ) {
+				throw new \RuntimeException( $location );
+			},
+		);
+
+		$_POST = $_REQUEST = [
+			'name'     => 'Numeric Login',
+			'user'     => '12345',
+			'_wpnonce' => wp_create_nonce( 'rest_api_guard_generate_jwt' ),
+		];
+
+		try {
+			handle_generate_jwt();
+		} catch ( \RuntimeException ) {
+			// Redirected.
+		}
+
+		$this->assertSame( $user->ID, array_values( get_tokens() )[0]['user_id'] );
+	}
 }

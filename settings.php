@@ -16,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 add_action( 'admin_menu', __NAMESPACE__ . '\on_admin_menu' );
 add_action( 'admin_init', __NAMESPACE__ . '\on_admin_init' );
+add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\on_admin_enqueue_scripts' );
 add_action( 'admin_post_rest_api_guard_generate_jwt', __NAMESPACE__ . '\handle_generate_jwt' );
 add_action( 'admin_post_rest_api_guard_revoke_jwt', __NAMESPACE__ . '\handle_revoke_jwt' );
 
@@ -45,6 +46,59 @@ function on_admin_menu() {
 		'manage_options',
 		SETTINGS_KEY,
 		__NAMESPACE__ . '\render_admin_page',
+	);
+}
+
+/**
+ * Enqueue the user autocomplete for the token form.
+ *
+ * @param string $hook_suffix The current admin page.
+ */
+function on_admin_enqueue_scripts( $hook_suffix ) {
+	if ( 'settings_page_' . SETTINGS_KEY !== $hook_suffix || ! is_jwt_authentication_enabled() ) {
+		return;
+	}
+
+	wp_enqueue_script( 'wp-api-fetch' );
+	wp_add_inline_script(
+		'wp-api-fetch',
+		<<<'JS'
+		document.addEventListener( 'DOMContentLoaded', () => {
+			const input = document.getElementById( 'rest-api-guard-jwt-user' );
+			const list = document.getElementById( 'rest-api-guard-jwt-users' );
+			let timer;
+
+			if ( ! input || ! list ) {
+				return;
+			}
+
+			input.addEventListener( 'input', () => {
+				clearTimeout( timer );
+
+				if ( input.value.length < 2 ) {
+					return;
+				}
+
+				timer = setTimeout( async () => {
+					const users = await wp.apiFetch( {
+						path: wp.url.addQueryArgs( '/wp/v2/users', {
+							search: input.value,
+							context: 'edit',
+							per_page: 10,
+							_fields: 'username,name',
+						} ),
+					} );
+
+					list.replaceChildren( ...users.map( ( user ) => {
+						const option = document.createElement( 'option' );
+						option.value = user.username;
+						option.label = user.name;
+						return option;
+					} ) );
+				}, 250 );
+			} );
+		} );
+		JS,
 	);
 }
 
@@ -213,7 +267,7 @@ function render_tokens_section() {
 							<input type="hidden" name="action" value="rest_api_guard_revoke_jwt" />
 							<input type="hidden" name="jti" value="<?php echo esc_attr( $jti ); ?>" />
 							<?php wp_nonce_field( 'rest_api_guard_revoke_jwt' ); ?>
-							<?php submit_button( __( 'Revoke', 'rest-api-guard' ), 'delete small', 'submit', false ); ?>
+							<?php submit_button( __( 'Revoke', 'rest-api-guard' ), 'delete small', 'submit', false, [ 'id' => 'revoke-' . $jti ] ); ?>
 						</form>
 					</td>
 				</tr>
@@ -221,7 +275,7 @@ function render_tokens_section() {
 		</tbody>
 	</table>
 
-	<h3><?php esc_html_e( 'Generate Token', 'rest-api-guard' ); ?></h3>
+	<h3 style="margin-top: 2.5em;"><?php esc_html_e( 'Generate Token', 'rest-api-guard' ); ?></h3>
 	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 		<input type="hidden" name="action" value="rest_api_guard_generate_jwt" />
 		<?php wp_nonce_field( 'rest_api_guard_generate_jwt' ); ?>
@@ -233,8 +287,9 @@ function render_tokens_section() {
 			<tr>
 				<th scope="row"><label for="rest-api-guard-jwt-user"><?php esc_html_e( 'User', 'rest-api-guard' ); ?></label></th>
 				<td>
-					<input type="text" class="regular-text" name="user" id="rest-api-guard-jwt-user" />
-					<p class="description"><?php esc_html_e( 'Optional user ID or login. Leave empty for an anonymous token. User tokens require "Allow User Authentication with JSON Web Token" to be enabled.', 'rest-api-guard' ); ?></p>
+					<input type="text" class="regular-text" name="user" id="rest-api-guard-jwt-user" list="rest-api-guard-jwt-users" autocomplete="off" />
+					<datalist id="rest-api-guard-jwt-users"></datalist>
+					<p class="description"><?php esc_html_e( 'Optional. Start typing to search for a user, or leave empty for an anonymous token.', 'rest-api-guard' ); ?></p>
 				</td>
 			</tr>
 			<tr>
@@ -265,7 +320,11 @@ function handle_generate_jwt() {
 	$expiration = absint( $_POST['expiration'] ?? 0 );
 
 	if ( '' !== $user_input ) {
-		$user = get_user_by( is_numeric( $user_input ) ? 'id' : 'login', $user_input );
+		$user = get_user_by( 'login', $user_input );
+
+		if ( ! $user && is_numeric( $user_input ) ) {
+			$user = get_user_by( 'id', $user_input );
+		}
 
 		if ( ! $user ) {
 			redirect_to_admin_page( 'invalid_user' );
