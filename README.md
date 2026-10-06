@@ -1,26 +1,30 @@
 # REST API Guard
 
-Stable tag: 1.4.2
-
-Requires at least: 6.5
-
-Tested up to: 7.1
-
-Requires PHP: 8.3
-
-License: GPL v2 or later
-
-Tags: alleyinteractive, rest-api-guard
-
-Contributors: sean212
-
 [![All Pull Request Tests](https://github.com/alleyinteractive/wp-rest-api-guard/actions/workflows/all-pr-tests.yml/badge.svg?branch=develop)](https://github.com/alleyinteractive/wp-rest-api-guard/actions/workflows/all-pr-tests.yml)
+[![WordPress.org](https://img.shields.io/wordpress/plugin/v/rest-api-guard)](https://wordpress.org/plugins/rest-api-guard/)
 
-Restrict and control access to the REST API.
+Restrict and control anonymous access to the WordPress REST API, with optional JSON Web Token (JWT) authentication.
+
+Requires WordPress 6.5+ and PHP 8.3+.
+
+The WordPress REST API is public by default and shares a good deal of information about your site with anyone who asks. REST API Guard makes it easy to decide who can see what.
+
+Out of the box, the plugin:
+
+- Blocks anonymous access to the users endpoint (`/wp/v2/users`) so usernames aren't exposed.
+- Blocks anonymous access to the REST API index (`/`) and namespace endpoints (`/wp/v2`) so visitors can't list your plugins and post types.
+
+It can also:
+
+- Block all anonymous access to the REST API.
+- Allow anonymous access only to specific routes (allowlist), or block specific routes (denylist).
+- Require anonymous requests to include a JSON Web Token (JWT).
+- Let users authenticate with a JWT tied to their account.
+- Generate, list, and revoke tokens from the settings page or WP-CLI.
 
 ## Installation
 
-You can install the package via composer:
+Install the plugin from [WordPress.org](https://wordpress.org/plugins/rest-api-guard/) or with Composer:
 
 ```bash
 composer require alleyinteractive/wp-rest-api-guard
@@ -28,159 +32,159 @@ composer require alleyinteractive/wp-rest-api-guard
 
 ## Usage
 
-The WordPress REST API is generally very public and can share a good deal of
-information with the internet anonymously. This plugin aims to make it easier to
-restrict access to the REST API for your WordPress site.
+Every option is available on the settings page (**Settings → REST API Guard**) and as a filter for configuring the plugin in code. A setting controlled by a filter is shown as read-only on the settings page.
 
-Out of the box the plugin can:
+![The REST API Guard settings page](.wordpress-org/screenshot-1.png)
 
-- Disable anonymous access to the REST API.
-- Restrict and control anonymous access to the REST API by namespace, path, etc.
+![The Tokens tab](.wordpress-org/screenshot-2.png)
 
-### Settings Page
-
-The plugin can be configured via the Settings page (`Settings -> REST API
-Guard`) or via the relevant filter.
-
-![Screenshot of plugin settings screen](https://user-images.githubusercontent.com/346399/194411352-aa05e939-3fd1-4e37-a3d5-276c1c5c288f.png)
-
-### Preventing Access to User Information (`wp/v2/users`)
-
-By default, the plugin will restrict anonymous access to the users endpoint.
-This can be prevented in the plugin's settings or via code:
+To configure the plugin entirely in code and hide the settings page:
 
 ```php
-add_filter( 'rest_api_guard_allow_user_access', fn () => true );
+add_filter( 'rest_api_guard_disable_admin_settings', '__return_true' );
 ```
 
-### Preventing Access to Index (`/`) or Namespace Endpoints (`wp/v2`)
+The restrictions only apply to anonymous requests. Logged-in users, including the block editor, have the same REST API access WordPress normally gives them.
 
-To prevent anonymous users from browsing your site and discovering what plugins/post types are set up, the plugin restricts access to the index (`/`) and namespace (`wp/v2`) endpoints. This can be prevented in the plugin's settings or via code:
+### Restrict access to user information
+
+Anonymous access to `/wp/v2/users` is blocked by default. To allow it:
 
 ```php
-// Allow index access.
-add_filter( 'rest_api_guard_allow_index_access', fn () => true );
-
-// Allow namespace access.
-add_filter( 'rest_api_guard_allow_namespace_access', fn ( string $namespace ) => true );
+add_filter( 'rest_api_guard_allow_user_access', '__return_true' );
 ```
 
-### Restrict Anonymous Access to the REST API
+### Restrict access to the index and namespace endpoints
 
-The plugin can restrict anonymous access for any request to the REST API in the plugin's settings or via code:
+Anonymous access to the index (`/`) and namespace (`/wp/v2`) endpoints is blocked by default. To allow it:
 
 ```php
-add_filter( 'rest_api_guard_prevent_anonymous_access', fn () => true );
+add_filter( 'rest_api_guard_allow_index_access', '__return_true' );
+add_filter( 'rest_api_guard_allow_namespace_access', '__return_true' );
 ```
 
-### Limit Anonymous Access to Specific Namespaces/Routes (Allowlist)
+### Block all anonymous access
 
-Anonymous users can be granted access only to specific namespaces/routes.
-Requests outside of these paths will be denied. This can be configured in the
-plugin's settings or via code:
+```php
+add_filter( 'rest_api_guard_prevent_anonymous_access', '__return_true' );
+```
+
+### Allow anonymous access to specific routes (allowlist)
+
+When an allowlist is set, anonymous requests to any route not on the list are denied. The allowlist takes priority over the denylist. Use `*` as a wildcard.
 
 ```php
 add_filter(
 	'rest_api_guard_anonymous_requests_allowlist',
-	function ( array $paths, WP_REST_Request $request ): array {
-		// Allow other paths not included here will be denied.
-		$paths[] = 'wp/v2/post';
-		$paths[] = 'custom-namespace/v1/public/*';
-
-		return $paths;
-	},
-	10,
-	2
+	fn () => [
+		'/wp/v2/posts*',
+		'/custom-namespace/v1/public/*',
+	]
 );
 ```
 
-### Restrict Anonymous Access to Specific Namespaces/Routes (Denylist)
+### Deny anonymous access to specific routes (denylist)
 
-Anonymous users can be restricted from specific namespaces/routes. This acts as
-a denylist for specific paths that an anonymous user cannot access. The paths
-support regular expressions for matching. The use of the
-[Allowlist](#limit-anonymous-access-to-specific-namespacesroutes-allowlist)
-takes priority over this denylist. This can be configured in the plugin's
-settings or via code:
+Anonymous requests to routes on the denylist are denied. All other routes are allowed. Use `*` as a wildcard.
 
 ```php
 add_filter(
 	'rest_api_guard_anonymous_requests_denylist',
-	function ( array $paths, WP_REST_Request $request ): array {
-		$paths[] = 'wp/v2/user';
-		$paths[] = 'custom-namespace/v1/private/*';
-
-		return $paths;
-	},
-	10,
-	2
+	fn () => [
+		'/wp/v2/comments*',
+		'/custom-namespace/v1/private/*',
+	]
 );
 ```
 
-### Require JSON Web Token (JWT) Authentication for Anonymous Users
+### OPTIONS requests
 
-Anonymous users can be required to authenticate via a JSON Web Token (JWT) to
-access the REST API. Users should pass an `Authorization: Bearer <token>` header
-with their request. This can be configured in the plugin's settings or via code:
+`OPTIONS` requests aren't checked by default, since browsers send them as CORS preflight requests without credentials. To check them too:
 
 ```php
-add_filter( 'rest_api_guard_authentication_jwt', fn () => true );
+add_filter( 'rest_api_guard_check_options_requests', '__return_true' );
 ```
 
-Out of the box, the plugin will look for a JWT in the `Authorization: Bearer
-<token>` header. The JWT will be expected to have an audience of
-'wordpress-rest-api' and issuer of the site's URL. This can be configured in the
-plugin's settings or via code:
+## JSON Web Token (JWT) Authentication
+
+### Require a JWT for anonymous requests
+
+Anonymous requests can be required to send a token in an `Authorization: Bearer <token>` header:
 
 ```php
-add_filter( 'rest_api_guard_jwt_audience', fn ( string $audience ) => 'custom-audience' );
-
-add_filter( 'rest_api_guard_jwt_issuer', fn ( string $issuer ) => 'https://example.com' );
+add_filter( 'rest_api_guard_authentication_jwt', '__return_true' );
 ```
 
-The JWT's secret will be autogenerated and stored in the
-`rest_api_guard_jwt_secret` option. The secret can also be filtered via code:
+Tokens are expected to have an audience of `wordpress-rest-api` and an issuer of the site URL. Both can be changed:
 
 ```php
-add_filter( 'rest_api_guard_jwt_secret', fn ( string $secret ) => 'my-custom-secret' );
+add_filter( 'rest_api_guard_jwt_audience', fn () => 'custom-audience' );
+add_filter( 'rest_api_guard_jwt_issuer', fn () => 'https://example.com' );
 ```
 
-### Allow JWT Authentication for Authenticated Users
-
-Authenticated users can be authenticated with the REST API via a JSON Web Token.
-Similar to the anonymous JWT authentication, users should pass an
-`Authorization: Bearer <token>` header with their request. This can be
-configured in the plugin's settings or via code:
+Tokens are signed with a secret generated automatically and stored in the `rest_api_guard_jwt_secret` option. It can also be set in code:
 
 ```php
-add_filter( 'rest_api_guard_user_authentication_jwt', fn () => true );
+add_filter( 'rest_api_guard_jwt_secret', fn () => 'my-custom-secret' );
 ```
 
-### Generating JWTs for Anonymous and Authenticated Users
+### Authenticate users with a JWT
 
-JWTs can be generated by calling the `wp rest-api-guard generate-jwt [--user=<user_id>]`
-command or using the `Alley\WP\REST_API_Guard\generate_jwt()` method:
+Tokens can also be tied to a user. A request with a user token is treated as that user, with the same permissions they have:
 
 ```php
-$jwt = \Alley\WP\REST_API_Guard\generate_jwt(
-	expiration: 3600, // Optional. The expiration time in seconds from now.
-	user: 1, // Optional. The user ID to generate the JWT for. Supports `WP_User` or user ID.
+add_filter( 'rest_api_guard_user_authentication_jwt', '__return_true' );
+```
+
+Additional claims can be added to user tokens with the `rest_api_guard_jwt_additional_claims` filter. Existing claims can't be overwritten.
+
+### Generate, list, and revoke tokens
+
+Once JWT authentication is enabled, tokens can be generated from the **Tokens** tab of the settings page. Give each one a name so you can tell them apart later, and optionally tie it to a user or set an expiration. The token is shown once after it's generated, so copy it somewhere safe.
+
+The same tab lists every token the plugin has issued, and any of them can be revoked. A revoked token stops working right away.
+
+Tokens can also be managed with WP-CLI:
+
+```bash
+wp rest-api-guard generate-jwt [--name=<name>] [--user=<user-id>] [--expiration=<seconds>]
+wp rest-api-guard list-jwts
+wp rest-api-guard revoke-jwt <id>
+```
+
+Or generated in code:
+
+```php
+$token = \Alley\WP\REST_API_Guard\generate_jwt(
+	expiration: HOUR_IN_SECONDS, // Optional. Seconds until the token expires.
+	user: 1,                     // Optional. A user ID or WP_User.
+	name: 'Mobile App',          // Optional. A name to identify the token by.
 );
 ```
+
+Tokens issued before version 1.5.0 aren't tracked, so they can't be listed or revoked one at a time. They're still accepted by default. To reject them:
+
+```php
+add_filter( 'rest_api_guard_allow_untracked_jwt', '__return_false' );
+```
+
+Changing the `rest_api_guard_jwt_secret` option invalidates every token issued so far, tracked or not.
+
+### Caching
+
+Responses to REST API requests that include an `Authorization` header are sent with no-cache headers so a page cache or CDN doesn't store them.
 
 ## Testing
 
-Run `composer test` to run tests against PHPUnit and the PHP code in the plugin.
+Run `composer test` to run PHPCS and PHPUnit.
 
 ## Changelog
 
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
+See the [CHANGELOG](CHANGELOG.md) for what has changed recently.
 
 ## Credits
 
-This project is actively maintained by [Alley
-Interactive](https://github.com/alleyinteractive). Like what you see? [Come work
-with us](https://alley.co/careers/).
+This project is actively maintained by [Alley Interactive](https://github.com/alleyinteractive). Like what you see? [Come work with us](https://alley.co/careers/).
 
 ![Alley logo](https://avatars.githubusercontent.com/u/1733454?s=200&v=4)
 

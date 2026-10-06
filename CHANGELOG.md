@@ -2,6 +2,13 @@
 
 All notable changes to `wp-rest-guard` will be documented in this file.
 
+## v1.5.0 - 2026-10-06
+
+- Track issued JWTs and allow them to be revoked from the settings page or WP-CLI (`list-jwts`, `revoke-jwt`).
+- Add a "Tokens" tab to the settings page to generate, list, and revoke JWTs when JWT authentication is enabled.
+- Add the `rest_api_guard_allow_untracked_jwt` filter to reject JWTs issued before tracking.
+- Send no-cache headers on REST API requests that include an `Authorization` header.
+
 ## v1.4.2 - 2026-09-18
 
 - Prevent mixed-case REST API routes from bypassing anonymous access restrictions.
