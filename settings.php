@@ -8,6 +8,7 @@
 namespace Alley\WP\REST_API_Guard;
 
 use Firebase\JWT\JWT;
+use WP_REST_Request;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -15,6 +16,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 add_action( 'admin_menu', __NAMESPACE__ . '\on_admin_menu' );
 add_action( 'admin_init', __NAMESPACE__ . '\on_admin_init' );
+add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\on_admin_enqueue_scripts' );
+add_action( 'admin_post_rest_api_guard_generate_jwt', __NAMESPACE__ . '\handle_generate_jwt' );
+add_action( 'admin_post_rest_api_guard_revoke_jwt', __NAMESPACE__ . '\handle_revoke_jwt' );
 
 /**
  * Slug for the settings.
@@ -46,26 +50,328 @@ function on_admin_menu() {
 }
 
 /**
+ * Enqueue the user autocomplete for the token form.
+ *
+ * @param string $hook_suffix The current admin page.
+ */
+function on_admin_enqueue_scripts( $hook_suffix ) {
+	if ( 'settings_page_' . SETTINGS_KEY !== $hook_suffix || ! is_jwt_authentication_enabled() ) {
+		return;
+	}
+
+	wp_enqueue_script( 'wp-api-fetch' );
+	wp_add_inline_script(
+		'wp-api-fetch',
+		<<<'JS'
+		document.addEventListener( 'DOMContentLoaded', () => {
+			const input = document.getElementById( 'rest-api-guard-jwt-user' );
+			const list = document.getElementById( 'rest-api-guard-jwt-users' );
+			let timer;
+
+			if ( ! input || ! list ) {
+				return;
+			}
+
+			input.addEventListener( 'input', () => {
+				clearTimeout( timer );
+
+				if ( input.value.length < 2 ) {
+					return;
+				}
+
+				timer = setTimeout( async () => {
+					const users = await wp.apiFetch( {
+						path: wp.url.addQueryArgs( '/wp/v2/users', {
+							search: input.value,
+							context: 'edit',
+							per_page: 10,
+							_fields: 'username,name',
+						} ),
+					} );
+
+					list.replaceChildren( ...users.map( ( user ) => {
+						const option = document.createElement( 'option' );
+						option.value = user.username;
+						option.label = user.name;
+						return option;
+					} ) );
+				}, 250 );
+			} );
+		} );
+		JS,
+	);
+}
+
+/**
  * Render the admin settings.
  */
 function render_admin_page() {
+	$tabs = [
+		'settings' => __( 'Settings', 'rest-api-guard' ),
+	];
+
+	if ( is_jwt_authentication_enabled() ) {
+		$tabs['tokens'] = __( 'Tokens', 'rest-api-guard' );
+	}
+
+	$current_tab = sanitize_key( $_GET['tab'] ?? '' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+	if ( ! isset( $tabs[ $current_tab ] ) ) {
+		$current_tab = 'settings';
+	}
 	?>
 	<div class="wrap">
 		<h2>
 			<?php esc_html_e( 'REST API Guard', 'rest-api-guard' ); ?>
 		</h2>
 
-		<?php settings_errors(); ?>
+		<?php if ( count( $tabs ) > 1 ) : ?>
+			<nav class="nav-tab-wrapper">
+				<?php foreach ( $tabs as $tab => $label ) : ?>
+					<a
+						href="<?php echo esc_url( get_admin_page_url( 'settings' === $tab ? [] : [ 'tab' => $tab ] ) ); ?>"
+						class="nav-tab <?php echo $tab === $current_tab ? 'nav-tab-active' : ''; ?>"
+						<?php echo $tab === $current_tab ? 'aria-current="page"' : ''; ?>
+					>
+						<?php echo esc_html( $label ); ?>
+					</a>
+				<?php endforeach; ?>
+			</nav>
+		<?php endif; ?>
 
-		<form method="post" action="options.php">
-			<?php
-				settings_fields( SETTINGS_KEY );
-				do_settings_sections( SETTINGS_KEY );
-				submit_button();
-			?>
-		</form>
+		<?php if ( 'tokens' === $current_tab ) : ?>
+			<?php render_tokens_section(); ?>
+		<?php else : ?>
+			<?php settings_errors(); ?>
+
+			<form method="post" action="options.php">
+				<?php
+					settings_fields( SETTINGS_KEY );
+					do_settings_sections( SETTINGS_KEY );
+					submit_button();
+				?>
+			</form>
+		<?php endif; ?>
 	</div>
 	<?php
+}
+
+/**
+ * Check if anonymous or user JWT authentication is enabled.
+ *
+ * @return bool
+ */
+function is_jwt_authentication_enabled(): bool {
+	if ( ! class_exists( JWT::class ) ) {
+		return false;
+	}
+
+	$settings = (array) get_option( SETTINGS_KEY );
+	$request  = new WP_REST_Request();
+
+	/* Documented in plugin.php. */
+	return true === apply_filters( 'rest_api_guard_authentication_jwt', $settings['authentication_jwt'] ?? false, $request )
+		|| true === apply_filters( 'rest_api_guard_user_authentication_jwt', $settings['user_authentication_jwt'] ?? false, $request );
+}
+
+/**
+ * Get the URL of the settings page.
+ *
+ * @param array<string, string> $args Query arguments to add.
+ * @return string
+ */
+function get_admin_page_url( array $args = [] ): string {
+	return add_query_arg(
+		array_merge( [ 'page' => SETTINGS_KEY ], $args ),
+		admin_url( 'options-general.php' ),
+	);
+}
+
+/**
+ * Render the section to generate, list, and revoke tokens.
+ */
+function render_tokens_section() {
+	$notice = sanitize_key( $_GET['rest_api_guard_notice'] ?? '' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$tokens = get_tokens();
+
+	uasort( $tokens, fn ( $a, $b ) => $b['issued_at'] <=> $a['issued_at'] );
+	?>
+	<p><?php esc_html_e( 'JSON Web Tokens (JWTs) issued by the plugin. Revoking a token prevents it from being used again.', 'rest-api-guard' ); ?></p>
+
+	<?php
+	if ( 'generated' === $notice ) {
+		$token = get_transient( 'rest_api_guard_new_jwt_' . get_current_user_id() );
+		delete_transient( 'rest_api_guard_new_jwt_' . get_current_user_id() );
+
+		if ( $token ) {
+			printf(
+				'<div class="notice notice-success"><p>%1$s</p><p><input type="text" class="large-text code" readonly value="%2$s" onfocus="this.select();" /></p></div>',
+				esc_html__( 'Token generated. Copy it now, it will not be shown again.', 'rest-api-guard' ),
+				esc_attr( $token ),
+			);
+		}
+	} elseif ( 'revoked' === $notice ) {
+		printf( '<div class="notice notice-success"><p>%s</p></div>', esc_html__( 'Token revoked.', 'rest-api-guard' ) );
+	} elseif ( 'invalid_user' === $notice ) {
+		printf( '<div class="notice notice-error"><p>%s</p></div>', esc_html__( 'The user could not be found.', 'rest-api-guard' ) );
+	}
+	?>
+
+	<table class="widefat striped">
+		<thead>
+			<tr>
+				<th><?php esc_html_e( 'Name', 'rest-api-guard' ); ?></th>
+				<th><?php esc_html_e( 'User', 'rest-api-guard' ); ?></th>
+				<th><?php esc_html_e( 'Issued', 'rest-api-guard' ); ?></th>
+				<th><?php esc_html_e( 'Expires', 'rest-api-guard' ); ?></th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody>
+			<?php if ( empty( $tokens ) ) : ?>
+				<tr>
+					<td colspan="5"><?php esc_html_e( 'No tokens have been issued.', 'rest-api-guard' ); ?></td>
+				</tr>
+			<?php endif; ?>
+
+			<?php foreach ( $tokens as $jti => $token ) : ?>
+				<?php $user = $token['user_id'] ? get_user_by( 'id', $token['user_id'] ) : null; ?>
+				<tr>
+					<td><?php echo esc_html( '' !== $token['name'] ? $token['name'] : $jti ); ?></td>
+					<td>
+						<?php
+						if ( $user ) {
+							echo esc_html( $user->user_login );
+						} elseif ( $token['user_id'] ) {
+							/* translators: %d: The user ID. */
+							echo esc_html( sprintf( __( 'Deleted user #%d', 'rest-api-guard' ), $token['user_id'] ) );
+						} else {
+							esc_html_e( 'Anonymous', 'rest-api-guard' );
+						}
+						?>
+					</td>
+					<td><?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $token['issued_at'] ) ); ?></td>
+					<td>
+						<?php
+						if ( null === $token['expires_at'] ) {
+							esc_html_e( 'Never', 'rest-api-guard' );
+						} elseif ( $token['expires_at'] < time() ) {
+							esc_html_e( 'Expired', 'rest-api-guard' );
+						} else {
+							echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $token['expires_at'] ) );
+						}
+						?>
+					</td>
+					<td>
+						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+							<input type="hidden" name="action" value="rest_api_guard_revoke_jwt" />
+							<input type="hidden" name="jti" value="<?php echo esc_attr( $jti ); ?>" />
+							<?php wp_nonce_field( 'rest_api_guard_revoke_jwt' ); ?>
+							<?php submit_button( __( 'Revoke', 'rest-api-guard' ), 'delete small', 'submit', false, [ 'id' => 'revoke-' . $jti ] ); ?>
+						</form>
+					</td>
+				</tr>
+			<?php endforeach; ?>
+		</tbody>
+	</table>
+
+	<h3 style="margin-top: 2.5em;"><?php esc_html_e( 'Generate Token', 'rest-api-guard' ); ?></h3>
+	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+		<input type="hidden" name="action" value="rest_api_guard_generate_jwt" />
+		<?php wp_nonce_field( 'rest_api_guard_generate_jwt' ); ?>
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row"><label for="rest-api-guard-jwt-name"><?php esc_html_e( 'Name', 'rest-api-guard' ); ?></label></th>
+				<td><input type="text" class="regular-text" name="name" id="rest-api-guard-jwt-name" required /></td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="rest-api-guard-jwt-user"><?php esc_html_e( 'User', 'rest-api-guard' ); ?></label></th>
+				<td>
+					<input type="text" class="regular-text" name="user" id="rest-api-guard-jwt-user" list="rest-api-guard-jwt-users" autocomplete="off" />
+					<datalist id="rest-api-guard-jwt-users"></datalist>
+					<p class="description"><?php esc_html_e( 'Optional. Start typing to search for a user, or leave empty for an anonymous token.', 'rest-api-guard' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="rest-api-guard-jwt-expiration"><?php esc_html_e( 'Expiration (days)', 'rest-api-guard' ); ?></label></th>
+				<td>
+					<input type="number" class="small-text" min="1" name="expiration" id="rest-api-guard-jwt-expiration" />
+					<p class="description"><?php esc_html_e( 'Leave empty for a token that never expires.', 'rest-api-guard' ); ?></p>
+				</td>
+			</tr>
+		</table>
+		<?php submit_button( __( 'Generate Token', 'rest-api-guard' ), 'secondary' ); ?>
+	</form>
+	<?php
+}
+
+/**
+ * Generate a token from the settings page.
+ */
+function handle_generate_jwt() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'Sorry, you are not allowed to manage tokens.', 'rest-api-guard' ), 403 );
+	}
+
+	check_admin_referer( 'rest_api_guard_generate_jwt' );
+
+	$user       = null;
+	$user_input = sanitize_text_field( wp_unslash( $_POST['user'] ?? '' ) );
+	$expiration = absint( $_POST['expiration'] ?? 0 );
+
+	if ( '' !== $user_input ) {
+		$user = get_user_by( 'login', $user_input );
+
+		if ( ! $user && is_numeric( $user_input ) ) {
+			$user = get_user_by( 'id', $user_input );
+		}
+
+		if ( ! $user ) {
+			redirect_to_admin_page( 'invalid_user' );
+		}
+	}
+
+	$token = generate_jwt(
+		expiration: $expiration ? $expiration * DAY_IN_SECONDS : null,
+		user: $user ? $user : null,
+		name: sanitize_text_field( wp_unslash( $_POST['name'] ?? '' ) ),
+	);
+
+	set_transient( 'rest_api_guard_new_jwt_' . get_current_user_id(), $token, MINUTE_IN_SECONDS );
+
+	redirect_to_admin_page( 'generated' );
+}
+
+/**
+ * Revoke a token from the settings page.
+ */
+function handle_revoke_jwt() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'Sorry, you are not allowed to manage tokens.', 'rest-api-guard' ), 403 );
+	}
+
+	check_admin_referer( 'rest_api_guard_revoke_jwt' );
+
+	revoke_token( sanitize_text_field( wp_unslash( $_POST['jti'] ?? '' ) ) );
+
+	redirect_to_admin_page( 'revoked' );
+}
+
+/**
+ * Redirect back to the settings page with a notice.
+ *
+ * @param string $notice The notice to display.
+ */
+function redirect_to_admin_page( string $notice ): never {
+	wp_safe_redirect(
+		get_admin_page_url(
+			[
+				'tab'                   => 'tokens',
+				'rest_api_guard_notice' => $notice,
+			],
+		),
+	);
+	exit;
 }
 
 /**

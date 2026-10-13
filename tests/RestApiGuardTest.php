@@ -3,13 +3,23 @@ namespace Alley\WP\REST_API_Guard\Tests;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use Mantle\Testing\Exceptions\WP_Die_Exception;
 use Mantle\Testkit\Test_Case;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 use function Alley\WP\REST_API_Guard\generate_jwt;
+use function Alley\WP\REST_API_Guard\get_jwt_audience;
+use function Alley\WP\REST_API_Guard\get_jwt_issuer;
 use function Alley\WP\REST_API_Guard\get_jwt_secret;
+use function Alley\WP\REST_API_Guard\get_token;
+use function Alley\WP\REST_API_Guard\get_tokens;
+use function Alley\WP\REST_API_Guard\handle_generate_jwt;
+use function Alley\WP\REST_API_Guard\handle_revoke_jwt;
+use function Alley\WP\REST_API_Guard\is_jwt_authentication_enabled;
+use function Alley\WP\REST_API_Guard\revoke_token;
 
 use const Alley\WP\REST_API_Guard\SETTINGS_KEY;
+use const Alley\WP\REST_API_Guard\TOKENS_KEY;
 
 /**
  * Visit {@see https://mantle.alley.co/testing/test-framework.html} to learn more.
@@ -19,6 +29,7 @@ class RestApiGuardTest extends Test_Case {
 		parent::setUp();
 
 		delete_option( SETTINGS_KEY );
+		delete_option( TOKENS_KEY );
 	}
 
 	public function test_default_anonymous_access() {
@@ -261,8 +272,10 @@ class RestApiGuardTest extends Test_Case {
 	}
 
 	#[DataProvider( 'jwtDataProviderAnonymous' )]
-	public function test_jwt_authentication_anonymous( string $type, string $token ) {
+	public function test_jwt_authentication_anonymous( string $type, ?string $token ) {
 		$this->expectApplied( 'rest_api_guard_authentication_jwt' );
+
+		$token ??= generate_jwt();
 
 		add_filter( 'rest_api_guard_authentication_jwt', fn () => true );
 
@@ -289,7 +302,7 @@ class RestApiGuardTest extends Test_Case {
 
 	public static function jwtDataProviderAnonymous(): array {
 		return [
-			'valid' => [ 'valid', generate_jwt() ],
+			'valid' => [ 'valid', null ],
 			'invalid' => [ 'invalid', 'invalid' ],
 			'empty' => [ 'invalid', '' ],
 		];
@@ -358,5 +371,166 @@ class RestApiGuardTest extends Test_Case {
 
 		$this->assertEquals( $user->user_email, $decoded->user_email );
 		$this->assertEquals( $user->ID, $decoded->sub ); // Ensure it cannot overwrite a claim.
+	}
+
+	public function test_generate_jwt_tracks_token() {
+		$user  = static::factory()->user->create_and_get();
+		$token = generate_jwt( expiration: 3600, user: $user, name: 'Example' );
+
+		$decoded = JWT::decode( $token, new Key( get_jwt_secret(), 'HS256' ) );
+
+		$this->assertNotEmpty( $decoded->jti );
+		$this->assertSame(
+			[
+				'name'       => 'Example',
+				'user_id'    => $user->ID,
+				'issued_at'  => $decoded->iat,
+				'expires_at' => $decoded->exp,
+			],
+			get_token( $decoded->jti ),
+		);
+	}
+
+	public function test_revoked_jwt_is_rejected() {
+		add_filter( 'rest_api_guard_authentication_jwt', fn () => true );
+
+		$token = generate_jwt();
+
+		$this->with_header( 'Authorization', "Bearer $token" )->get( '/wp-json/wp/v2/posts' )->assertOk();
+
+		revoke_token( JWT::decode( $token, new Key( get_jwt_secret(), 'HS256' ) )->jti );
+
+		$this->with_header( 'Authorization', "Bearer $token" )->get( '/wp-json/wp/v2/posts' )->assertUnauthorized();
+	}
+
+	public function test_untracked_jwt() {
+		add_filter( 'rest_api_guard_authentication_jwt', fn () => true );
+
+		$token = JWT::encode(
+			[
+				'iss' => get_jwt_issuer(),
+				'aud' => get_jwt_audience(),
+				'iat' => time(),
+			],
+			get_jwt_secret(),
+			'HS256',
+		);
+
+		$this->with_header( 'Authorization', "Bearer $token" )->get( '/wp-json/wp/v2/posts' )->assertOk();
+
+		add_filter( 'rest_api_guard_allow_untracked_jwt', fn () => false );
+
+		$this->with_header( 'Authorization', "Bearer $token" )->get( '/wp-json/wp/v2/posts' )->assertUnauthorized();
+	}
+
+	public function test_nocache_headers_with_authorization_header() {
+		$this->get( '/wp-json/wp/v2/posts' )->assertOk();
+
+		$this->assertFalse( apply_filters( 'rest_send_nocache_headers', false ) );
+
+		$this->with_header( 'Authorization', 'Bearer ' . generate_jwt() )->get( '/wp-json/wp/v2/posts' )->assertOk();
+
+		$this->assertTrue( apply_filters( 'rest_send_nocache_headers', false ) );
+	}
+
+	public function test_admin_generate_and_revoke_jwt() {
+		$this->acting_as( 'administrator' );
+
+		add_filter(
+			'wp_redirect',
+			function ( $location ) {
+				throw new \RuntimeException( $location );
+			},
+		);
+
+		$_POST = $_REQUEST = [
+			'name'       => 'From Admin',
+			'expiration' => '2',
+			'_wpnonce'   => wp_create_nonce( 'rest_api_guard_generate_jwt' ),
+		];
+
+		try {
+			handle_generate_jwt();
+		} catch ( \RuntimeException $e ) {
+			$this->assertStringContainsString( 'rest_api_guard_notice=generated', $e->getMessage() );
+		}
+
+		$tokens = get_tokens();
+		$jti    = array_key_first( $tokens );
+
+		$this->assertCount( 1, $tokens );
+		$this->assertSame( 'From Admin', $tokens[ $jti ]['name'] );
+		$this->assertNull( $tokens[ $jti ]['user_id'] );
+		$this->assertSame( $tokens[ $jti ]['issued_at'] + 2 * DAY_IN_SECONDS, $tokens[ $jti ]['expires_at'] );
+		$this->assertNotEmpty( get_transient( 'rest_api_guard_new_jwt_' . get_current_user_id() ) );
+
+		$_POST = $_REQUEST = [
+			'jti'      => $jti,
+			'_wpnonce' => wp_create_nonce( 'rest_api_guard_revoke_jwt' ),
+		];
+
+		try {
+			handle_revoke_jwt();
+		} catch ( \RuntimeException $e ) {
+			$this->assertStringContainsString( 'rest_api_guard_notice=revoked', $e->getMessage() );
+		}
+
+		$this->assertEmpty( get_tokens() );
+	}
+
+	public function test_non_admin_cannot_generate_jwt() {
+		$this->acting_as( 'editor' );
+
+		$_POST = $_REQUEST = [
+			'name'     => 'Nope',
+			'_wpnonce' => wp_create_nonce( 'rest_api_guard_generate_jwt' ),
+		];
+
+		try {
+			handle_generate_jwt();
+			$this->fail( 'Expected wp_die().' );
+		} catch ( WP_Die_Exception ) {
+			$this->assertEmpty( get_tokens() );
+		}
+	}
+
+	public function test_jwt_authentication_enabled() {
+		$this->assertFalse( is_jwt_authentication_enabled() );
+
+		update_option( SETTINGS_KEY, [ 'user_authentication_jwt' => true ] );
+
+		$this->assertTrue( is_jwt_authentication_enabled() );
+
+		delete_option( SETTINGS_KEY );
+		add_filter( 'rest_api_guard_authentication_jwt', '__return_true' );
+
+		$this->assertTrue( is_jwt_authentication_enabled() );
+	}
+
+	public function test_admin_generate_jwt_for_user_login() {
+		$this->acting_as( 'administrator' );
+
+		$user = static::factory()->user->create_and_get( [ 'user_login' => '12345' ] );
+
+		add_filter(
+			'wp_redirect',
+			function ( $location ) {
+				throw new \RuntimeException( $location );
+			},
+		);
+
+		$_POST = $_REQUEST = [
+			'name'     => 'Numeric Login',
+			'user'     => '12345',
+			'_wpnonce' => wp_create_nonce( 'rest_api_guard_generate_jwt' ),
+		];
+
+		try {
+			handle_generate_jwt();
+		} catch ( \RuntimeException ) {
+			// Redirected.
+		}
+
+		$this->assertSame( $user->ID, array_values( get_tokens() )[0]['user_id'] );
 	}
 }

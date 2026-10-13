@@ -3,7 +3,7 @@
  * Plugin Name: REST API Guard
  * Plugin URI: https://github.com/alleyinteractive/wp-rest-api-guard
  * Description: Restrict and control access to the REST API
- * Version: 1.4.2
+ * Version: 1.5.0
  * Author: Sean Fisher
  * Author URI: https://alley.com/
  * Requires at least: 6.5
@@ -36,6 +36,7 @@ function main() {
 	}
 
 	require_once __DIR__ . '/settings.php';
+	require_once __DIR__ . '/tokens.php';
 
 	add_filter( 'rest_pre_dispatch', __NAMESPACE__ . '\on_rest_pre_dispatch', 10, 3 );
 }
@@ -104,6 +105,24 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
 
 					if ( empty( $decoded->aud ) || get_jwt_audience() !== $decoded->aud ) {
 						throw new InvalidArgumentException( __( 'Invalid JWT audience.', 'rest-api-guard' ) );
+					}
+
+					if ( ! empty( $decoded->jti ) ) {
+						if ( null === get_token( (string) $decoded->jti ) ) {
+							throw new InvalidArgumentException( __( 'Invalid or revoked token.', 'rest-api-guard' ) );
+						}
+					} elseif (
+						/**
+						 * Filter whether to accept JWTs that were issued before tokens were tracked.
+						 *
+						 * Untracked tokens have no "jti" claim and cannot be revoked individually.
+						 *
+						 * @param bool      $allow   Whether to allow untracked tokens. Default true.
+						 * @param \stdClass $decoded The decoded JWT payload.
+						 */
+						false === apply_filters( 'rest_api_guard_allow_untracked_jwt', true, $decoded )
+					) {
+						throw new InvalidArgumentException( __( 'Untracked tokens are not allowed.', 'rest-api-guard' ) );
 					}
 
 					if ( $allow_user_jwt && ! empty( $decoded->sub ) ) {
@@ -259,6 +278,10 @@ function should_prevent_anonymous_access( WP_REST_Server $server, WP_REST_Reques
  * @return mixed
  */
 function on_rest_pre_dispatch( $pre, $server, $request ) {
+	if ( ! empty( $request->get_header( 'Authorization' ) ) ) {
+		add_filter( 'rest_send_nocache_headers', '__return_true' );
+	}
+
 	if ( ! empty( $pre ) || is_user_logged_in() ) {
 		return $pre;
 	}
@@ -340,11 +363,12 @@ function get_jwt_secret(): string {
  *
  * @param int|null         $expiration The expiration time of the JWT in seconds or null for no expiration.
  * @param WP_User|int|null $user The user to include in the JWT or null for no user.
+ * @param string           $name A name to identify the token by when listing or revoking it.
  * @return string
  *
  * @throws InvalidArgumentException If the user is invalid or unknown.
  */
-function generate_jwt( ?int $expiration = null, WP_User|int|null $user = null ): string {
+function generate_jwt( ?int $expiration = null, WP_User|int|null $user = null, string $name = '' ): string {
 	$payload = [
 		'iss' => get_jwt_issuer(),
 		'aud' => get_jwt_audience(),
@@ -380,6 +404,18 @@ function generate_jwt( ?int $expiration = null, WP_User|int|null $user = null ):
 			$payload = array_merge( $additional_claims, $payload );
 		}
 	}
+
+	$payload['jti'] = wp_generate_uuid4();
+
+	track_token(
+		$payload['jti'],
+		[
+			'name'       => $name,
+			'user_id'    => $payload['sub'] ?? null,
+			'issued_at'  => $payload['iat'],
+			'expires_at' => $payload['exp'] ?? null,
+		],
+	);
 
 	return JWT::encode( $payload, get_jwt_secret(), 'HS256' );
 }
