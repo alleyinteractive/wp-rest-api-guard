@@ -184,7 +184,7 @@ See the [CHANGELOG](CHANGELOG.md) for what has changed recently.
 
 ## Credits
 
-This project is actively maintained by [Alley Interactive](https://github.com/alleyinteractive). Like what you see? [Come work with us](https://alley.co/careers/).
+This project is actively maintained by [Alley Interactive](https://github.com/alleyinteractive). Like what you see? [Come work with us](https://alley.com/careers/).
 
 ![Alley logo](https://avatars.githubusercontent.com/u/1733454?s=200&v=4)
 
